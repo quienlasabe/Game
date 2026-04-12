@@ -9,8 +9,8 @@ export default function PantallaSala({ session, user }: any) {
   const [jugadores, setJugadores] = useState<any[]>([]);
   const [estaSonando, setEstaSonando] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const salaIdRef = useRef<string | null>(null); // evita race condition en realtime
 
-  // Imágenes vinculadas a la temática
   const fondos: any = {
     'Rock': '/backgrounds/Rock.jpg',
     'Pop': '/backgrounds/pop.jpg',
@@ -20,50 +20,70 @@ export default function PantallaSala({ session, user }: any) {
     'Blues': '/backgrounds/blues.jpg'
   };
 
+  const cargarJugadores = async (salaId: string) => {
+    const { data } = await supabase
+      .from('sala_jugadores')
+      .select('*, profiles(username, avatar_url)')
+      .eq('sala_id', salaId);
+    if (data) setJugadores(data);
+  };
+
   useEffect(() => {
     if (!codigo) return;
 
-    // 1. Cargar datos iniciales de la sala
     const cargarSala = async () => {
-      const { data } = await supabase.from('salas').select('*').eq('codigo', codigo).single();
-      if (data) setSala(data);
+      const { data } = await supabase
+        .from('salas')
+        .select('*')
+        .eq('codigo_acceso', codigo)
+        .single();
+      if (data) {
+        setSala(data);
+        salaIdRef.current = data.id;
+        cargarJugadores(data.id);
+      }
     };
 
     cargarSala();
 
-    // 2. Suscribirse a cambios en tiempo real
     const canal = supabase
       .channel(`sala:${codigo}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'salas', filter: `codigo=eq.${codigo}` }, 
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'salas', filter: `codigo_acceso=eq.${codigo}` },
         (payload) => setSala(payload.new)
       )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sala_jugadores' }, 
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sala_jugadores' },
         async () => {
-          const { data } = await supabase.from('sala_jugadores').select('*, profiles(username, avatar_url)').eq('sala_id', sala?.id);
-          if (data) setJugadores(data);
+          if (salaIdRef.current) {
+            cargarJugadores(salaIdRef.current);
+          }
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(canal); };
-  }, [codigo, sala?.id]);
+  }, [codigo]);
 
-  // Lógica para reproducir el snippet de Spotify
+  // Reproducir preview cuando cambia la canción
   useEffect(() => {
-    if (sala?.cancion_actual_preview && !estaSonando) {
-      audioRef.current = new Audio(sala.cancion_actual_preview);
+    if (sala?.cancion_actual_url && !estaSonando) {
+      audioRef.current?.pause();
+      audioRef.current = new Audio(sala.cancion_actual_url);
       audioRef.current.play();
       setEstaSonando(true);
-      
+
       setTimeout(() => {
         audioRef.current?.pause();
         setEstaSonando(false);
       }, (sala.tiempo_preview || 5) * 1000);
     }
-  }, [sala?.cancion_actual_preview]);
+  }, [sala?.cancion_actual_url]);
 
   const handleBuzzer = async () => {
-    if (sala?.quien_presiono || estaSonando === false) return;
+    if (!estaSonando || sala?.quien_presiono) return;
     await supabase.from('salas').update({ quien_presiono: user.id }).eq('id', sala.id);
   };
 
@@ -72,7 +92,7 @@ export default function PantallaSala({ session, user }: any) {
   return (
     <main className="min-h-screen bg-cover bg-center flex flex-col items-center justify-between p-8"
           style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url(${fondos[sala.tematica] || '/backgrounds/portada.jpg'})` }}>
-      
+
       {/* Info de Sala */}
       <div className="w-full flex justify-between items-start">
         <div className="bg-black/50 p-4 rounded-xl border border-neonCyan/30 backdrop-blur-md">
@@ -89,31 +109,30 @@ export default function PantallaSala({ session, user }: any) {
       <div className="flex flex-col items-center">
         <div className={`relative w-64 h-64 md:w-80 md:h-80 rounded-full border-8 transition-all duration-500 flex items-center justify-center bg-black/20 backdrop-blur-sm
           ${estaSonando ? 'border-neonPink shadow-neon-pink scale-105' : 'border-white/10'}`}>
-          
+
           <div className="text-center">
             <h3 className="text-neonCyan font-black text-4xl italic leading-none">¿QUIÉN LA</h3>
             <h3 className="text-neonPink font-black text-4xl italic leading-none">SABE?</h3>
           </div>
 
-          {/* Animación de ondas cuando suena */}
           {estaSonando && (
             <div className="absolute inset-0 rounded-full border-4 border-neonPink animate-ping opacity-20"></div>
           )}
         </div>
 
-        <button 
+        <button
           onClick={handleBuzzer}
           disabled={!estaSonando || !!sala.quien_presiono}
           className={`mt-12 px-20 py-6 rounded-2xl text-3xl font-black transition-all transform active:scale-90
-            ${!estaSonando || !!sala.quien_presiono 
-              ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
+            ${!estaSonando || !!sala.quien_presiono
+              ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
               : 'bg-neonPink text-white shadow-neon-pink hover:scale-110'}`}
         >
           {sala.quien_presiono ? '¡BLOQUEADO!' : '¡BUZZER!'}
         </button>
       </div>
 
-      {/* Lista de Jugadores (Abajo) */}
+      {/* Lista de Jugadores */}
       <div className="w-full max-w-5xl flex gap-4 overflow-x-auto pb-4 justify-center">
         {jugadores.map((j) => (
           <div key={j.user_id} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all

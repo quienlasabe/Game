@@ -26,34 +26,42 @@ export default function Lobby({ session, user }: { session: any, user: any }) {
   }, [session, user, router]);
 
   const crearSala = async () => {
-    // Generar un código de 5 letras/números (ej: XJ49K)
     const nuevoCodigo = Math.random().toString(36).substring(2, 7).toUpperCase();
-    
+
     const { data, error } = await supabase
       .from('salas')
-      .insert([{ 
-        host_id: user.id, 
-        codigo: nuevoCodigo, 
+      .insert([{
+        host_id: user.id,
+        codigo_acceso: nuevoCodigo,
         estado: 'esperando',
-        tematica: 'Rock' 
+        tematica: 'Rock'
       }])
       .select()
       .single();
 
-    if (data) router.push(`/sala/${nuevoCodigo}`);
-    if (error) alert("Error al crear sala");
+    if (error) { alert("Error al crear sala"); return; }
+
+    // Agregar al host como jugador
+    await supabase.from('sala_jugadores').insert([{ sala_id: data.id, user_id: user.id }]);
+    router.push(`/sala/${nuevoCodigo}`);
   };
 
   const unirseASala = async () => {
     if (!codigoSala) return;
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('salas')
       .select('id')
-      .eq('codigo', codigoSala)
+      .eq('codigo_acceso', codigoSala)
       .single();
 
-    if (data) router.push(`/sala/${codigoSala}`);
-    else alert("Sala no encontrada");
+    if (!data) { alert("Sala no encontrada"); return; }
+
+    // Agregar al jugador si no está ya
+    await supabase
+      .from('sala_jugadores')
+      .upsert([{ sala_id: data.id, user_id: user.id }], { onConflict: 'sala_id,user_id' });
+
+    router.push(`/sala/${codigoSala}`);
   };
 
   if (!perfil) return <div className="bg-darkBg min-h-screen" />;
@@ -74,7 +82,7 @@ export default function Lobby({ session, user }: { session: any, user: any }) {
           </div>
           <div className="text-right">
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Victorias</p>
-            <p className="text-5xl font-black text-neonPink drop-shadow-[0_0_10px_rgba(255,0,255,0.5)]">{perfil.ganadas}</p>
+            <p className="text-5xl font-black text-neonPink drop-shadow-[0_0_10px_rgba(255,0,255,0.5)]">{perfil.partidas_ganadas}</p>
           </div>
         </div>
 
