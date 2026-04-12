@@ -126,7 +126,7 @@ export default function Lobby({ session, user }: { session: any; user: any }) {
                 Preview: <span className="text-white">{tiempoPreview}s</span>
               </p>
               <div className="flex gap-2">
-                {[5, 10, 15, 20].map(t => (
+                {[5, 10, 15].map(t => (
                   <button key={t} onClick={() => setTiempoPreview(t)}
                     className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all
                       ${tiempoPreview === t

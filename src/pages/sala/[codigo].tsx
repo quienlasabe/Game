@@ -17,11 +17,12 @@ const FONDOS: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 // SALA DE ESPERA
 // ─────────────────────────────────────────────────────────────────────────────
-function SalaEspera({ sala, jugadores, user, onEmpezar }: any) {
-  const esHost = sala.host_id === user?.id;
+function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
+  const esHost    = sala.host_id === user?.id;
   const tematicas: string[] = sala.tematica?.split(',') ?? [];
   const miJugador = jugadores.find((j: any) => j.user_id === user?.id);
   const todosListos = jugadores.length > 0 && jugadores.every((j: any) => j.confirmado);
+  const fondo = FONDOS[tematicas[0]] ?? '/backgrounds/portada.jpg';
 
   const marcarListo = async () => {
     if (!miJugador) return;
@@ -29,94 +30,111 @@ function SalaEspera({ sala, jugadores, user, onEmpezar }: any) {
   };
 
   return (
-    <main
-      className="min-h-screen bg-cover bg-center flex flex-col items-center justify-between p-6 gap-6"
-      style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.82), rgba(0,0,0,0.82)), url(${FONDOS[tematicas[0]] ?? '/backgrounds/portada.jpg'})` }}
-    >
-      {/* Header */}
-      <div className="w-full flex justify-between items-center">
-        <div>
-          <p className="text-neonCyan text-[10px] font-bold uppercase tracking-widest">Código de sala</p>
-          <h1 className="text-4xl font-black text-white">{sala.codigo_acceso}</h1>
+    <div className="relative min-h-screen overflow-hidden">
+
+      {/* ── FONDO: vista previa del juego, opacidad baja ── */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.65)), url(${fondo})` }}
+      />
+
+      {/* Buzzer fantasma centrado */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-none select-none opacity-30">
+        <div className="w-52 h-52 rounded-full border-8 border-neonPink flex items-center justify-center bg-black/20">
+          <div className="text-center">
+            <p className="text-neonCyan font-black text-2xl italic leading-tight">¿QUIÉN LA</p>
+            <p className="text-neonPink font-black text-2xl italic leading-tight">SABE?</p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-white/40 text-[10px] uppercase tracking-widest">Esperando jugadores</p>
-          <p className="text-white font-black">{jugadores.length} / {sala.max_jugadores ?? '?'}</p>
+        <div className="w-64 py-5 rounded-2xl bg-neonPink/40 text-center font-black text-xl text-white">
+          ¡BUZZER!
+        </div>
+        {/* Jugadores fantasma */}
+        <div className="flex gap-3 mt-2">
+          {jugadores.map((j: any) => (
+            <div key={j.user_id} className="flex flex-col items-center gap-1">
+              <img src={j.profiles?.avatar_url} className="w-10 h-10 rounded-full border-2 border-white/30" />
+              <p className="text-[9px] font-bold text-white/50 w-14 truncate text-center">{j.profiles?.username}</p>
+              <p className="text-neonCyan font-black text-xs">0 pts</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Config de sala */}
-      <div className="w-full max-w-sm bg-white/5 rounded-3xl border border-white/10 p-6 flex flex-col gap-4 backdrop-blur-sm">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Temáticas</p>
-          <div className="flex flex-wrap gap-2">
+      {/* ── PRIMER PLANO: panel de config ── */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-sm bg-black/70 backdrop-blur-md rounded-3xl border border-white/15 p-6 flex flex-col gap-5 shadow-2xl">
+
+          {/* Header del panel */}
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-neonCyan text-[10px] font-bold uppercase tracking-widest">Código de sala</p>
+              <h1 className="text-3xl font-black text-white">{sala.codigo_acceso}</h1>
+            </div>
+            <button onClick={onSalir} className="text-white/30 hover:text-white text-xs font-bold uppercase tracking-widest transition-all mt-1">
+              ← Salir
+            </button>
+          </div>
+
+          {/* Config resumida */}
+          <div className="flex gap-4 flex-wrap">
             {tematicas.map((t: string) => (
-              <span key={t} className="px-3 py-1 rounded-full text-xs font-black bg-neonPink/20 border border-neonPink/50 text-neonPink">
+              <span key={t} className="px-3 py-1 rounded-full text-xs font-black bg-neonPink/20 border border-neonPink/40 text-neonPink">
                 {t}
               </span>
             ))}
           </div>
-        </div>
-        <div className="flex gap-6">
-          <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Preview</p>
-            <p className="text-white font-black">{sala.tiempo_preview ?? 15}s</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Jugadores</p>
-            <p className="text-white font-black">Máx. {sala.max_jugadores ?? 5}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de jugadores */}
-      <div className="w-full max-w-sm flex flex-col gap-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Jugadores</p>
-        {jugadores.map((j: any) => (
-          <div key={j.user_id} className="flex items-center justify-between bg-white/5 rounded-2xl px-4 py-3 border border-white/10">
-            <div className="flex items-center gap-3">
-              <img src={j.profiles?.avatar_url} className="w-10 h-10 rounded-full border-2 border-white/20" />
-              <div>
-                <p className="font-black text-sm">{j.profiles?.username}</p>
-                {sala.host_id === j.user_id && (
-                  <p className="text-neonCyan text-[10px] uppercase tracking-widest">Host</p>
-                )}
-              </div>
+          <div className="flex gap-6 text-sm">
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest">Preview</p>
+              <p className="text-white font-black">{sala.tiempo_preview ?? 15}s</p>
             </div>
-            <span className={`text-xs font-black px-3 py-1 rounded-full ${j.confirmado ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'bg-white/5 text-white/30 border border-white/10'}`}>
-              {j.confirmado ? '✓ LISTO' : 'Esperando'}
-            </span>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest">Máx. jugadores</p>
+              <p className="text-white font-black">{sala.max_jugadores ?? 5}</p>
+            </div>
           </div>
-        ))}
-        {jugadores.length === 0 && (
-          <p className="text-white/30 text-sm text-center py-4">Compartí el código para que se unan</p>
-        )}
-      </div>
 
-      {/* Botones */}
-      <div className="w-full max-w-sm flex flex-col gap-3">
-        {!esHost && !miJugador?.confirmado && (
-          <button onClick={marcarListo}
-            className="w-full py-4 rounded-2xl font-black text-lg bg-neonCyan text-black hover:scale-105 active:scale-95 transition-all shadow-neon-cyan">
-            ✓ ESTOY LISTO
-          </button>
-        )}
-        {esHost && (
-          <button
-            onClick={onEmpezar}
-            className={`w-full py-4 rounded-2xl font-black text-xl transition-all
-              ${todosListos || jugadores.length >= 1
-                ? 'bg-neonPink text-white shadow-neon-pink hover:scale-105 active:scale-95'
-                : 'bg-white/10 text-white/30 cursor-default'}`}
-          >
-            🎮 EMPEZAR JUEGO
-          </button>
-        )}
-        {esHost && !todosListos && jugadores.length > 1 && (
-          <p className="text-center text-white/30 text-xs">No todos están listos — podés empezar igual</p>
-        )}
+          {/* Lista jugadores */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Jugadores ({jugadores.length})</p>
+            {jugadores.map((j: any) => (
+              <div key={j.user_id} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-white/10">
+                <div className="flex items-center gap-2">
+                  <img src={j.profiles?.avatar_url} className="w-8 h-8 rounded-full" />
+                  <p className="font-bold text-sm">{j.profiles?.username}</p>
+                  {sala.host_id === j.user_id && <span className="text-neonCyan text-[9px] uppercase">Host</span>}
+                </div>
+                <span className={`text-[10px] font-black px-2 py-1 rounded-full
+                  ${j.confirmado ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-white/30 border border-white/10'}`}>
+                  {j.confirmado ? '✓ LISTO' : '...'}
+                </span>
+              </div>
+            ))}
+            {jugadores.length === 0 && (
+              <p className="text-white/30 text-xs text-center py-2">Compartí el código para que se unan</p>
+            )}
+          </div>
+
+          {/* Botones acción */}
+          {!esHost && !miJugador?.confirmado && (
+            <button onClick={marcarListo}
+              className="w-full py-4 rounded-2xl font-black text-lg bg-neonCyan text-black hover:scale-105 active:scale-95 transition-all shadow-neon-cyan">
+              ✓ ESTOY LISTO
+            </button>
+          )}
+          {esHost && (
+            <button onClick={onEmpezar}
+              className="w-full py-4 rounded-2xl font-black text-xl bg-neonPink text-white shadow-neon-pink hover:scale-105 active:scale-95 transition-all">
+              🎮 EMPEZAR JUEGO
+            </button>
+          )}
+          {esHost && !todosListos && jugadores.length > 1 && (
+            <p className="text-center text-white/30 text-[10px]">No todos están listos — podés empezar igual</p>
+          )}
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
 
