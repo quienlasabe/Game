@@ -34,9 +34,11 @@ export default function Portada({ session }: { session: any }) {
       <div className="absolute inset-0 z-10 bg-gradient-to-b from-transparent via-darkBg/70 to-darkBg" />
 
       <div className="relative z-20 flex flex-col items-center text-center animate-fadeIn">
-        <h1 className="text-7xl md:text-9xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink to-neonCyan drop-shadow-[0_0_20px_rgba(255,0,255,0.7)] mb-4">
-          ¿QUIÉN LA SABE?
-        </h1>
+        <div className="mb-4" style={{ filter: 'drop-shadow(0 0 25px rgba(255,0,255,0.8))' }}>
+          <h1 className="text-6xl md:text-8xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink to-neonCyan px-3 py-2 leading-tight">
+            ¿QUIÉN LA SABE?
+          </h1>
+        </div>
         
         <p className="text-neonCyan font-bold tracking-[0.4em] mb-12 uppercase text-sm md:text-base">
           El desafío musical definitivo
