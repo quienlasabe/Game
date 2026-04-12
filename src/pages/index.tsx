@@ -5,63 +5,67 @@ import { useRouter } from 'next/router';
 export default function Portada({ session }: { session: any }) {
   const router = useRouter();
 
-  // Si ya inició sesión, lo mandamos directo al Lobby
   useEffect(() => {
-    if (session) {
-      router.push('/lobby');
-    }
+    if (session) router.push('/lobby');
   }, [session, router]);
 
   const loginConGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/lobby',
-      },
+      options: { redirectTo: window.location.origin + '/lobby' },
     });
-    if (error) console.error("Error al entrar:", error.message);
+    if (error) console.error('Error:', error.message);
   };
 
   return (
-    <main className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-darkBg">
-      {/* El fondo con el mosaico de discos */}
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-30 grayscale-[0.2]"
-        style={{ backgroundImage: "url('/backgrounds/portada.jpg')" }}
+    <main className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden">
+      {/* Fondo */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: "url('/backgrounds/portada.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       />
-      
-      {/* Capa de oscuridad para que se lea el texto */}
-      <div className="absolute inset-0 z-10 bg-gradient-to-b from-transparent via-darkBg/70 to-darkBg" />
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/80" />
 
-      <div className="relative z-20 flex flex-col items-center text-center animate-fadeIn">
-        <div className="mb-4" style={{ filter: 'drop-shadow(0 0 25px rgba(255,0,255,0.8))' }}>
-          <h1 className="text-6xl md:text-8xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink to-neonCyan px-3 py-2 leading-tight">
-            ¿QUIÉN LA SABE?
+      <div className="relative z-10 flex flex-col items-center text-center px-6 animate-fadeIn">
+
+        {/* Título — dos líneas como el mock */}
+        <div style={{ filter: 'drop-shadow(0 0 30px rgba(255,0,255,0.9)) drop-shadow(0 0 60px rgba(0,255,255,0.4))' }}>
+          <h1 className="font-black italic leading-none text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+              style={{ fontSize: 'clamp(4rem, 18vw, 9rem)', lineHeight: 0.9 }}>
+            ¿QUIÉN
+          </h1>
+          <h1 className="font-black italic leading-none text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+              style={{ fontSize: 'clamp(4rem, 18vw, 9rem)', lineHeight: 0.9 }}>
+            LA SABE?
           </h1>
         </div>
-        
-        <p className="text-neonCyan font-bold tracking-[0.4em] mb-12 uppercase text-sm md:text-base">
+
+        <p className="text-white/60 font-bold tracking-[0.35em] mt-5 mb-12 uppercase text-xs md:text-sm">
           El desafío musical definitivo
         </p>
 
+        {/* Botón Google — igual al mock */}
         <button
           onClick={loginConGoogle}
-          className="flex items-center gap-4 px-10 py-4 bg-white text-black font-black rounded-full hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95"
+          className="flex items-center gap-3 px-8 py-4 bg-white text-black font-black text-base rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-[0_4px_30px_rgba(255,255,255,0.25)] w-72 justify-center mb-4"
         >
           <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-          ENTRAR CON GOOGLE
+          LOG IN CON GOOGLE
         </button>
 
-        <div className="mt-16 flex gap-10 opacity-50 grayscale">
-            <div className="text-center">
-                <p className="text-2xl font-bold">5s</p>
-                <p className="text-[10px] uppercase tracking-widest">Preview</p>
-            </div>
-            <div className="text-center">
-                <p className="text-2xl font-bold">4-5</p>
-                <p className="text-[10px] uppercase tracking-widest">Jugadores</p>
-            </div>
-        </div>
+        {/* Botón unirse — outlined como el mock */}
+        <button
+          onClick={() => router.push('/lobby')}
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-transparent text-white font-black text-base rounded-2xl border-2 border-white/40 hover:border-white hover:scale-105 active:scale-95 transition-all w-72"
+        >
+          UNIRSE A PARTIDA
+        </button>
+
       </div>
     </main>
   );
