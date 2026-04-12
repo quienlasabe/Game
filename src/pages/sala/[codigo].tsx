@@ -19,7 +19,7 @@ function Fondo({ src }: { src: string }) {
   return (
     <div className="fixed inset-0 -z-10 transition-all duration-700"
       style={{ backgroundImage: `url(${src})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-      <div className="absolute inset-0 bg-black/72" />
+      <div className="absolute inset-0 bg-black/75" />
     </div>
   );
 }
@@ -64,7 +64,7 @@ function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
 
       {/* Panel overlay */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-5">
-        <div className="w-full max-w-sm bg-black/78 backdrop-blur-lg rounded-3xl border border-white/10 p-6 flex flex-col gap-4 shadow-2xl">
+        <div className="w-full max-w-sm bg-black/80 backdrop-blur-lg rounded-3xl border border-white/10 p-6 flex flex-col gap-4 shadow-2xl">
 
           <div className="flex justify-between items-start">
             <div>
@@ -406,8 +406,8 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
                   {mostrarRespuesta ? '🙈 Ocultar' : '👁 Ver respuesta'}
                 </button>
                 {mostrarRespuesta && (
-                  <div className="bg-black/70 border border-neonYellow/50 rounded-xl p-3 text-center">
-                    <p className="text-neonYellow font-black">{sala.respuesta_correcta}</p>
+                  <div className="bg-black/70 border border-yellow-400/50 rounded-xl p-3 text-center">
+                    <p className="text-yellow-400 font-black">{sala.respuesta_correcta}</p>
                   </div>
                 )}
               </>
