@@ -13,13 +13,16 @@ export default function Portada({ session }: { session: any }) {
   }, [session, router]);
 
   const loginConGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin + '/lobby',
+        skipBrowserRedirect: true,
       },
     });
-    if (error) console.error("Error al entrar:", error.message);
+    if (error) { alert("SDK error: " + error.message); return; }
+    alert("URL generada:\n" + data.url);
+    window.location.href = data.url;
   };
 
   return (
