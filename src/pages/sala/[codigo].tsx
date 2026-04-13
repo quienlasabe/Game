@@ -418,6 +418,10 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
   const modoEntrenamiento = jugadores.length === 1;
   const tematicasDisp: string[] = sala.tematica?.split(',') ?? ['Rock'];
 
+  // Ref siempre apunta a la sala actual (evita stale closure en timers)
+  const salaRef = useRef<any>(sala);
+  useEffect(() => { salaRef.current = sala; }, [sala]);
+
   // Audio
   const [audioOK,   setAudioOK]   = useState(false);
   const audioRef    = useRef<HTMLAudioElement | null>(null);
@@ -434,6 +438,8 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
   const [miTextoCancion,   setMiTextoCancion]   = useState('');
   const [yaRespondio,      setYaRespondio]      = useState(false);
   const [mostrarRespuesta, setMostrarRespuesta] = useState(false);
+  // Snapshot de jugadores en el momento que terminó la ronda (para mostrar resultados)
+  const [resultadosRonda,  setResultadosRonda]  = useState<any[]>([]);
 
   const timerCancionRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRespRef      = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -500,12 +506,12 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
       if (r <= 0) {
         clearInterval(timerCancionRef.current!);
         audio.pause();
-        // La transición a 'respondiendo' la hace el host via DB
-        if (esHost) {
+        // Usa salaRef.current para evitar stale closure
+        if (salaRef.current?.host_id === user?.id) {
           supabase.from('salas').update({
-            fase_actual:  'respondiendo',
-            fase_inicio:  Date.now(),
-          }).eq('id', sala.id);
+            fase_actual: 'respondiendo',
+            fase_inicio: Date.now(),
+          }).eq('id', salaRef.current.id);
         }
       }
     }, 1000);
@@ -563,9 +569,15 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
   }, [jugadores]);
 
   const calcularResultados = async () => {
-    // Ordenar por orden de respuesta (respondio_en asc), premiamos rapidez
-    const correctos = jugadores
-      .filter((j: any) => j.respuesta_ronda === sala.respuesta_correcta)
+    const currentSala = salaRef.current;
+    const currentJugadores = jugadores; // captura local
+
+    // Guardar snapshot para la pantalla de resultados
+    setResultadosRonda([...currentJugadores]);
+
+    // Ordenar por velocidad de respuesta correcta
+    const correctos = currentJugadores
+      .filter((j: any) => j.respuesta_ronda === currentSala.respuesta_correcta)
       .sort((a: any, b: any) => (a.respondio_en ?? Infinity) - (b.respondio_en ?? Infinity));
 
     for (let i = 0; i < correctos.length; i++) {
@@ -579,10 +591,10 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
     // Limpiar respuestas y pasar a resultado
     await supabase.from('sala_jugadores')
       .update({ respuesta_ronda: null, respondio_en: null })
-      .eq('sala_id', sala.id);
+      .eq('sala_id', currentSala.id);
     await supabase.from('salas')
       .update({ fase_actual: 'resultado', cancion_actual_url: null })
-      .eq('id', sala.id);
+      .eq('id', currentSala.id);
   };
 
   const siguienteCancion = async () => {
@@ -615,9 +627,9 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
       await supabase.from('salas').update({
         cancion_actual_url: track.preview_url,
         respuesta_correcta: track.respuesta,
-        opciones_actuales:  JSON.stringify(track.opciones),
+        opciones_actuales:  track.opciones,   // array directo a jsonb, no JSON.stringify
         fase_actual:        'escuchando',
-      }).eq('id', sala.id);
+      }).eq('id', salaRef.current.id);
     } catch (e: any) {
       alert('Error: ' + e.message);
     } finally {
@@ -644,11 +656,12 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
       .eq('sala_id', sala.id).eq('user_id', user.id);
   };
 
-  const opciones: string[] = sala?.opciones_actuales
-    ? (typeof sala.opciones_actuales === 'string'
-        ? JSON.parse(sala.opciones_actuales)
-        : sala.opciones_actuales)
-    : [];
+  // opciones_actuales es jsonb — siempre viene como array desde Supabase
+  const opciones: string[] = Array.isArray(sala?.opciones_actuales)
+    ? sala.opciones_actuales
+    : (typeof sala?.opciones_actuales === 'string'
+        ? (() => { try { return JSON.parse(sala.opciones_actuales); } catch { return []; } })()
+        : []);
 
   const fase = sala?.fase_actual ?? 'idle';
 
@@ -744,11 +757,42 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
             </button>
           )}
 
-          {esHost && fase === 'resultado' && sala.respuesta_correcta && (
-            <button onClick={() => setMostrarRespuesta(v => !v)}
-              className="w-full py-2 rounded-xl text-xs font-black bg-white/10 border border-white/20 active:scale-95 transition-all flex-shrink-0">
-              {mostrarRespuesta ? '🙈 Ocultar' : '👁 Ver respuesta'}
-            </button>
+          {/* ── RESULTADOS DE RONDA ── */}
+          {fase === 'resultado' && (
+            <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0">
+              {/* Canción correcta */}
+              <div className="bg-yellow-400/10 border border-yellow-400/40 rounded-2xl p-3 flex-shrink-0">
+                <p className="text-[9px] uppercase tracking-widest text-yellow-400/70 mb-0.5">Era...</p>
+                <p className="text-yellow-400 font-black text-sm leading-snug">{sala.respuesta_correcta}</p>
+              </div>
+              {/* Quién acertó */}
+              <div className="flex flex-col gap-1.5 flex-shrink-0">
+                {(resultadosRonda.length > 0 ? resultadosRonda : jugadores)
+                  .sort((a: any, b: any) => (a.respondio_en ?? Infinity) - (b.respondio_en ?? Infinity))
+                  .map((j: any, i: number) => {
+                    const acerto = j.respuesta_ronda === sala.respuesta_correcta;
+                    const ptsGanados = acerto ? (PUNTOS_TABLA[
+                      (resultadosRonda.length > 0 ? resultadosRonda : jugadores)
+                        .filter((x: any) => x.respuesta_ronda === sala.respuesta_correcta)
+                        .sort((a: any, b: any) => (a.respondio_en ?? Infinity) - (b.respondio_en ?? Infinity))
+                        .findIndex((x: any) => x.user_id === j.user_id)
+                    ] ?? 1) : 0;
+                    return (
+                      <div key={j.user_id}
+                        className={`flex items-center gap-2 rounded-xl px-3 py-2 border transition-all
+                          ${acerto ? 'bg-green-500/15 border-green-500/30' : 'bg-white/5 border-white/10'}`}>
+                        <img src={j.profiles?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0" />
+                        <p className="text-xs font-bold flex-1 truncate">{j.profiles?.username}</p>
+                        {acerto ? (
+                          <span className="text-green-400 font-black text-xs whitespace-nowrap">+{ptsGanados} pts</span>
+                        ) : (
+                          <span className="text-white/25 text-xs">—</span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
           )}
 
           {/* Opciones multiple choice */}
@@ -925,7 +969,8 @@ export default function PantallaSala({ session, user }: any) {
 
   const [sala,      setSala]      = useState<any>(null);
   const [jugadores, setJugadores] = useState<any[]>([]);
-  const salaIdRef = useRef<string | null>(null);
+  const salaIdRef        = useRef<string | null>(null);
+  const subJugadoresRef  = useRef<any>(null);
 
   const cargarJugadores = async (salaId: string) => {
     const { data } = await supabase.from('sala_jugadores')
@@ -937,18 +982,35 @@ export default function PantallaSala({ session, user }: any) {
     if (!codigo) return;
     const cargar = async () => {
       const { data } = await supabase.from('salas').select('*').eq('codigo_acceso', codigo).single();
-      if (data) { setSala(data); salaIdRef.current = data.id; cargarJugadores(data.id); }
+      if (!data) return;
+      setSala(data);
+      salaIdRef.current = data.id;
+      cargarJugadores(data.id);
+
+      // Suscripción filtrada por sala_id — se configura DESPUÉS de tener el ID
+      const subJugadores = supabase.channel(`jugadores:${data.id}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'sala_jugadores',
+          filter: `sala_id=eq.${data.id}`,
+        }, () => cargarJugadores(data.id))
+        .subscribe();
+
+      // Guardar ref para cleanup
+      subJugadoresRef.current = subJugadores;
     };
     cargar();
 
     const canal = supabase.channel(`sala:${codigo}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'salas', filter: `codigo_acceso=eq.${codigo}` },
-        payload => setSala(payload.new))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sala_jugadores' },
-        () => { if (salaIdRef.current) cargarJugadores(salaIdRef.current); })
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'salas',
+        filter: `codigo_acceso=eq.${codigo}`,
+      }, payload => setSala(payload.new))
       .subscribe();
 
-    return () => { supabase.removeChannel(canal); };
+    return () => {
+      supabase.removeChannel(canal);
+      if (subJugadoresRef.current) supabase.removeChannel(subJugadoresRef.current);
+    };
   }, [codigo]);
 
   const empezarJuego = async () => {
