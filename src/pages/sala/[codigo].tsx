@@ -475,10 +475,19 @@ function ModoJuntada({ sala, user }: any) {
               ))}
             </div>
           )}
-          <button onClick={siguienteCancion} disabled={cargando || fase === 'escuchando'}
-            className="w-full py-4 rounded-2xl font-black text-lg bg-neonCyan text-black shadow-neon-cyan hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
-            {cargando ? '⏳ Buscando...' : '🎵 SIGUIENTE CANCIÓN'}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={siguienteCancion} disabled={cargando || fase === 'escuchando'}
+              className="flex-1 py-4 rounded-2xl font-black text-lg bg-neonCyan text-black shadow-neon-cyan hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+              {cargando ? '⏳...' : '🎵 SIG. CANCIÓN'}
+            </button>
+            <button onClick={async () => {
+              await supabase.from('salas').update({ estado: 'terminado' }).eq('id', sala.id);
+            }}
+              className="py-4 px-4 rounded-2xl font-black text-sm active:scale-95 transition-all flex-shrink-0"
+              style={{ background: 'rgba(255,50,50,0.15)', border: '1.5px solid rgba(255,80,80,0.35)', color: '#ff8080' }}>
+              FIN
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -871,17 +880,26 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
             )}
           </div>
 
-          {/* Host: siguiente canción */}
+          {/* Host: siguiente canción + terminar */}
           {esHost && (fase === 'idle' || fase === 'resultado') && (
-            <button onClick={siguienteCancion} disabled={cargando}
-              className="w-full py-3 rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-40 flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg,#00ffee,#00ccbb)',
-                color: '#000',
-                boxShadow: cargando ? 'none' : '0 0 20px rgba(0,255,238,0.35)',
-              }}>
-              {cargando ? '⏳ Buscando...' : '🎵 SIGUIENTE CANCIÓN'}
-            </button>
+            <div className="flex gap-2 flex-shrink-0">
+              <button onClick={siguienteCancion} disabled={cargando}
+                className="flex-1 py-3 rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-40"
+                style={{
+                  background: 'linear-gradient(135deg,#00ffee,#00ccbb)',
+                  color: '#000',
+                  boxShadow: cargando ? 'none' : '0 0 20px rgba(0,255,238,0.35)',
+                }}>
+                {cargando ? '⏳...' : '🎵 SIG.'}
+              </button>
+              <button onClick={async () => {
+                await supabase.from('salas').update({ estado: 'terminado' }).eq('id', sala.id);
+              }}
+                className="py-3 px-3 rounded-2xl font-black text-xs active:scale-95 transition-all flex-shrink-0"
+                style={{ background: 'rgba(255,50,50,0.15)', border: '1.5px solid rgba(255,80,80,0.35)', color: '#ff8080' }}>
+                TERMINAR
+              </button>
+            </div>
           )}
 
           {/* ── RESULTADOS DE RONDA ── */}
@@ -1115,6 +1133,112 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PANTALLA FINAL — estadísticas post-partida
+// ─────────────────────────────────────────────────────────────────────────────
+function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
+  const tematicas: string[] = sala.tematica?.split(',') ?? [];
+  const fondo = FONDOS[tematicas[0]] ?? '/backgrounds/portada.jpg';
+  const ranking = [...jugadores].sort((a: any, b: any) => (b.puntos ?? 0) - (a.puntos ?? 0));
+  const yo = ranking.find((j: any) => j.user_id === user?.id);
+  const miPos = ranking.findIndex((j: any) => j.user_id === user?.id) + 1;
+  const MEDAL = ['🥇', '🥈', '🥉'];
+
+  return (
+    <div className="text-white flex flex-col" style={{ height: '100dvh', overflow: 'hidden' }}>
+      <Fondo src={fondo} />
+
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
+        <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
+          <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+            style={{ fontSize: 'clamp(0.9rem, 4vw, 1.1rem)', lineHeight: 1 }}>
+            ¿QUIÉN LA SABE?
+          </span>
+        </div>
+        <span className="text-yellow-400 text-[10px] font-black bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">
+          FIN
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className="relative z-10 flex-1 flex gap-3 px-4 pb-4 overflow-hidden min-h-0">
+
+        {/* LEFT: Podio */}
+        <div className="flex-1 flex flex-col gap-3 min-w-0">
+          {/* Tu resultado */}
+          {yo && (
+            <div className="rounded-2xl p-4 flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg,rgba(255,0,200,0.15),rgba(0,255,238,0.1))', border: '1px solid rgba(255,255,255,0.15)' }}>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1">Tu resultado</p>
+              <div className="flex items-center gap-3">
+                <img src={yo.profiles?.avatar_url} className="w-12 h-12 rounded-full border-2"
+                  style={{ borderColor: miPos === 1 ? '#fbbf24' : miPos === 2 ? '#d1d5db' : '#cd7c2e' }} />
+                <div>
+                  <p className="font-black text-lg leading-none" style={{ color: '#00ffee' }}>{yo.puntos ?? 0} pts</p>
+                  <p className="text-white/50 text-xs mt-0.5">{MEDAL[miPos - 1] ?? `#${miPos}`} puesto</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ESTADÍSTICAS POST-PARTIDA */}
+          <div className="rounded-2xl p-4 flex-shrink-0"
+            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-3">Estadísticas Post-Partida</p>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <p className="text-white/50 text-[10px] uppercase tracking-widest">Temática</p>
+                <p className="text-neonCyan font-black text-xs">{tematicas.join(', ')}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-white/50 text-[10px] uppercase tracking-widest">Modo</p>
+                <p className="text-neonPink font-black text-xs capitalize">{sala.modo_juego}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-white/50 text-[10px] uppercase tracking-widest">Jugadores</p>
+                <p className="text-white font-black text-xs">{jugadores.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: ranking */}
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          <div className="rounded-2xl p-3 flex flex-col flex-1 overflow-hidden"
+            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-2 flex-shrink-0">Ranking Final</p>
+            <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0">
+              {ranking.map((j: any, i: number) => (
+                <div key={j.user_id}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border flex-shrink-0 ${j.user_id === user?.id ? 'border-neonCyan/30' : 'border-white/8'}`}
+                  style={{ background: i === 0 ? 'rgba(251,191,36,0.12)' : i === 1 ? 'rgba(209,213,219,0.08)' : i === 2 ? 'rgba(205,124,46,0.08)' : 'rgba(255,255,255,0.04)' }}>
+                  <span className="text-base flex-shrink-0 w-5 text-center">
+                    {MEDAL[i] ?? <span className="text-white/25 text-xs font-black">#{i + 1}</span>}
+                  </span>
+                  <img src={j.profiles?.avatar_url} className="w-8 h-8 rounded-full flex-shrink-0" />
+                  <p className="font-black text-sm flex-1 truncate">{j.profiles?.username}</p>
+                  <p className="font-black text-sm flex-shrink-0" style={{ color: '#00ffee' }}>{j.puntos ?? 0}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={onFinalizar}
+            className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-all flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg,#ff00cc,#cc00ff)',
+              color: '#fff',
+              boxShadow: '0 0 25px rgba(255,0,200,0.5)',
+            }}>
+            🏁 FINALIZAR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PantallaSala({ session, user }: any) {
@@ -1186,6 +1310,13 @@ export default function PantallaSala({ session, user }: any) {
   };
 
   if (!sala) return <div className="bg-darkBg" style={{ height: '100dvh' }} />;
+
+  if (sala.estado === 'terminado') {
+    return (
+      <PantallaFinal sala={sala} jugadores={jugadores} user={user}
+        onFinalizar={() => router.push('/lobby')} />
+    );
+  }
 
   if (sala.estado === 'esperando') {
     return (
