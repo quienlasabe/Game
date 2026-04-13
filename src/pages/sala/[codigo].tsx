@@ -42,129 +42,204 @@ function Fondo({ src }: { src: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SALA DE ESPERA
+// SALA DE ESPERA — layout 2 columnas idéntico al mock
 // ─────────────────────────────────────────────────────────────────────────────
 function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
   const esHost    = sala.host_id === user?.id;
-  const tematicas = sala.tematica?.split(',') ?? [];
+  const tematicas: string[] = sala.tematica?.split(',') ?? [];
   const miJugador = jugadores.find((j: any) => j.user_id === user?.id);
   const fondo     = FONDOS[tematicas[0]] ?? '/backgrounds/portada.jpg';
+  const host      = jugadores.find((j: any) => j.user_id === sala.host_id);
+
+  const MODO_LABEL: Record<string, string> = {
+    opciones: '🎯 Con Opciones',
+    texto:    '✏️ Sin Opciones',
+    juntada:  '🎉 Juntada',
+  };
 
   const marcarListo = async () => {
     if (!miJugador) return;
     await supabase.from('sala_jugadores').update({ confirmado: true }).eq('id', miJugador.id);
   };
 
-  const modoLabel: Record<string, string> = {
-    opciones: '🎯 Con Opciones',
-    texto:    '✏️ Sin Opciones',
-    juntada:  '🎉 Juntada',
-  };
+  /* ── estilos reutilizables ── */
+  const panelCls = 'bg-black/65 backdrop-blur-xl rounded-2xl border border-white/10 p-4 flex flex-col gap-3';
+  const labelCls = 'text-[9px] font-black uppercase tracking-[0.18em] text-white/35';
 
   return (
-    <div className="min-h-screen text-white">
+    <div className="text-white" style={{ height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <Fondo src={fondo} />
 
-      {/* Ghost preview */}
-      <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none select-none opacity-15">
-        <div className="w-48 h-48 rounded-full border-8 border-neonPink flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-neonCyan font-black text-xl italic">¿QUIÉN LA</p>
-            <p className="text-neonPink font-black text-xl italic">SABE?</p>
-          </div>
+      {/* Header */}
+      <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
+        {/* Logo */}
+        <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
+          <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+            style={{ fontSize: 'clamp(1rem, 5vw, 1.3rem)', lineHeight: 1 }}>
+            ¿QUIÉN LA SABE?
+          </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 w-56 opacity-60">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="py-3 rounded-xl border border-neonPink/40 text-center text-xs font-black text-white/30">Opción {i}</div>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className={labelCls}>Sala</p>
+            <p className="font-black text-base tracking-widest">{sala.codigo_acceso}</p>
+          </div>
+          <button onClick={onSalir}
+            className="text-white/35 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">
+            ✕
+          </button>
         </div>
       </div>
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-5">
-        <div className="w-full max-w-sm bg-black/80 backdrop-blur-lg rounded-3xl border border-white/10 p-6 flex flex-col gap-4 shadow-2xl">
+      {/* Body: dos columnas */}
+      <div className="relative z-10 flex-1 flex gap-3 px-4 pb-4 overflow-hidden min-h-0">
 
-          <div className="flex justify-between items-start">
+        {/* ── COLUMNA IZQUIERDA: config de sala ── */}
+        <div className={`${panelCls} flex-1 min-w-0 overflow-y-auto`}>
+          <p className="font-black text-sm tracking-wide text-white/80">CREAR SALA</p>
+
+          {/* Host */}
+          <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2">
+            {host?.profiles?.avatar_url && (
+              <img src={host.profiles.avatar_url} className="w-8 h-8 rounded-full border border-neonCyan/40" />
+            )}
             <div>
-              <p className="text-neonCyan text-[10px] font-bold uppercase tracking-widest">Código</p>
-              <h1 className="text-3xl font-black tracking-widest">{sala.codigo_acceso}</h1>
+              <p className={labelCls}>Host</p>
+              <p className="text-xs font-black">{host?.profiles?.username ?? 'Host'}</p>
             </div>
-            <button onClick={onSalir}
-              className="text-white/40 hover:text-white text-xs font-bold uppercase tracking-widest transition-all mt-1">
-              ← Salir
-            </button>
           </div>
 
-          {/* Modo y temáticas */}
-          <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-black bg-neonCyan/20 border border-neonCyan/40 text-neonCyan">
-              {modoLabel[sala.modo_juego] ?? sala.modo_juego}
+          {/* Modo */}
+          <div>
+            <p className={labelCls + ' mb-1'}>Modo</p>
+            <span className="px-3 py-1 rounded-full text-[10px] font-black bg-neonCyan/15 border border-neonCyan/35 text-neonCyan">
+              {MODO_LABEL[sala.modo_juego] ?? sala.modo_juego}
             </span>
-            {tematicas.map((t: string) => (
-              <span key={t} className="px-3 py-1 rounded-full text-xs font-black bg-neonPink/20 border border-neonPink/40 text-neonPink">{t}</span>
-            ))}
           </div>
 
-          {/* Info Juntada */}
+          {/* Juntada teams */}
           {sala.modo_juego === 'juntada' && (
-            <div className="flex gap-3">
-              <div className="flex-1 bg-neonPink/10 border border-neonPink/30 rounded-2xl p-3 text-center">
-                <p className="text-[9px] uppercase tracking-widest text-gray-400">Equipo 1</p>
-                <p className="font-black text-neonPink truncate">{sala.equipo1_nombre}</p>
+            <div className="flex gap-2">
+              <div className="flex-1 bg-neonPink/10 border border-neonPink/25 rounded-xl p-2 text-center">
+                <p className={labelCls}>Equipo 1</p>
+                <p className="font-black text-xs text-neonPink truncate mt-0.5">{sala.equipo1_nombre}</p>
               </div>
-              <div className="flex items-center text-white/30 font-black">VS</div>
-              <div className="flex-1 bg-neonCyan/10 border border-neonCyan/30 rounded-2xl p-3 text-center">
-                <p className="text-[9px] uppercase tracking-widest text-gray-400">Equipo 2</p>
-                <p className="font-black text-neonCyan truncate">{sala.equipo2_nombre}</p>
+              <div className="flex-1 bg-neonCyan/10 border border-neonCyan/25 rounded-xl p-2 text-center">
+                <p className={labelCls}>Equipo 2</p>
+                <p className="font-black text-xs text-neonCyan truncate mt-0.5">{sala.equipo2_nombre}</p>
               </div>
             </div>
           )}
 
-          <div className="flex gap-6">
+          {/* Temáticas */}
+          <div>
+            <p className={labelCls + ' mb-1.5'}>Temática</p>
+            <div className="flex flex-wrap gap-1.5">
+              {tematicas.map((t: string) => (
+                <span key={t} className="px-2.5 py-1 rounded-full text-[10px] font-black bg-neonPink/15 border border-neonPink/35 text-neonPink">{t}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Tiempo preview + jugadores */}
+          <div className="flex gap-4">
             <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest">Preview</p>
-              <p className="font-black">{sala.tiempo_preview ?? 15}s</p>
+              <p className={labelCls}>Tiempo de Preview</p>
+              <div className="flex gap-1.5 mt-1.5">
+                {[5, 10, 15].map(t => (
+                  <span key={t}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-black border
+                      ${sala.tiempo_preview === t
+                        ? 'bg-neonCyan/20 border-neonCyan text-neonCyan'
+                        : 'border-white/15 text-white/30'}`}>
+                    {t}s
+                  </span>
+                ))}
+              </div>
             </div>
             {sala.modo_juego !== 'juntada' && (
               <div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest">Máx</p>
-                <p className="font-black">{sala.max_jugadores ?? 5}</p>
+                <p className={labelCls}>Jugadores (3-8)</p>
+                <p className="font-black text-xl text-white mt-1">{sala.max_jugadores ?? 5}</p>
               </div>
             )}
           </div>
 
-          {sala.modo_juego !== 'juntada' && (
-            <div className="flex flex-col gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Jugadores ({jugadores.length})</p>
-              {jugadores.length === 0 && (
-                <p className="text-white/30 text-xs text-center py-2">Compartí el código</p>
-              )}
-              {jugadores.map((j: any) => (
-                <div key={j.user_id} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-white/10">
-                  <div className="flex items-center gap-2">
-                    <img src={j.profiles?.avatar_url} className="w-8 h-8 rounded-full" />
-                    <p className="font-bold text-sm">{j.profiles?.username}</p>
-                    {sala.host_id === j.user_id && <span className="text-neonCyan text-[9px] uppercase">Host</span>}
-                  </div>
-                  <span className={`text-[10px] font-black px-2 py-1 rounded-full
-                    ${j.confirmado ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'text-white/30 border border-white/10'}`}>
-                    {j.confirmado ? '✓ LISTO' : '...'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!esHost && !miJugador?.confirmado && sala.modo_juego !== 'juntada' && (
+          {/* Botón listo para jugadores no-host */}
+          {!esHost && !miJugador?.confirmado && (
             <button onClick={marcarListo}
-              className="w-full py-4 rounded-2xl font-black text-lg bg-neonCyan text-black hover:scale-105 active:scale-95 transition-all shadow-neon-cyan">
+              className="mt-auto w-full py-3 rounded-2xl font-black text-sm bg-neonCyan text-black hover:brightness-110 active:scale-95 transition-all"
+              style={{ boxShadow: '0 0 20px rgba(0,255,255,0.35)' }}>
               ✓ ESTOY LISTO
             </button>
           )}
+          {!esHost && miJugador?.confirmado && (
+            <div className="mt-auto text-center py-2">
+              <span className="text-green-400 text-xs font-black">✓ Listo — esperando al host</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── COLUMNA DERECHA: confirmación de jugadores ── */}
+        <div className={`${panelCls} flex-1 min-w-0 overflow-hidden`}>
+          {/* Header panel derecho */}
+          <div className="flex items-center justify-between flex-shrink-0">
+            <p className="font-black text-sm tracking-wide text-white/80">CONFIRMACIÓN<br/>JUGADORES</p>
+            {jugadores.some((j: any) => !j.confirmado) === false && jugadores.length > 0 && (
+              <span className="flex items-center gap-1 bg-yellow-400/15 border border-yellow-400/35 rounded-full px-2 py-0.5">
+                <span className="text-yellow-400 text-[9px] font-black uppercase">🏆 Primera sangre</span>
+              </span>
+            )}
+          </div>
+
+          {/* Lista de jugadores */}
+          <div className="flex flex-col gap-2 flex-1 overflow-y-auto min-h-0">
+            {jugadores.length === 0 && (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-white/20 text-xs text-center">Compartí el código<br/>
+                  <span className="text-neonCyan font-black text-lg tracking-widest">{sala.codigo_acceso}</span>
+                </p>
+              </div>
+            )}
+            {jugadores.map((j: any) => (
+              <div key={j.user_id}
+                className="flex items-center gap-2.5 bg-white/5 rounded-xl px-3 py-2.5 border border-white/8 flex-shrink-0">
+                <div className="relative flex-shrink-0">
+                  <img src={j.profiles?.avatar_url} className="w-9 h-9 rounded-full" />
+                  {sala.host_id === j.user_id && (
+                    <span className="absolute -top-1 -right-1 text-[9px] bg-neonCyan text-black rounded-full w-3.5 h-3.5 flex items-center justify-center font-black leading-none">H</span>
+                  )}
+                </div>
+                <p className="font-black text-sm flex-1 truncate">{j.profiles?.username}</p>
+                {j.confirmado ? (
+                  <span className="flex items-center gap-1 bg-green-500/20 border border-green-400/40 rounded-full px-2 py-0.5 flex-shrink-0">
+                    <span className="text-green-400 text-[9px] font-black">✓ READY!</span>
+                  </span>
+                ) : (
+                  <span className="border border-white/15 rounded-full px-2 py-0.5 flex-shrink-0">
+                    <span className="text-white/25 text-[9px] font-black">pendiente</span>
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* EMPEZAR — solo para el host, en el panel derecho */}
           {esHost && (
-            <button onClick={onEmpezar}
-              className="w-full py-4 rounded-2xl font-black text-xl bg-neonPink text-white shadow-neon-pink hover:scale-105 active:scale-95 transition-all">
-              🎮 EMPEZAR
-            </button>
+            <div className="flex-shrink-0 flex flex-col gap-2 pt-2 border-t border-white/8">
+              <button onClick={onEmpezar}
+                className="w-full py-3.5 rounded-2xl font-black text-base transition-all active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #ff00cc, #cc00ff)',
+                  boxShadow: '0 0 25px rgba(255,0,200,0.45)',
+                  color: '#fff',
+                }}>
+                🎮 EMPEZAR
+              </button>
+              {jugadores.length > 1 && (
+                <p className="text-center text-white/25 text-[9px]">Podés empezar sin que todos confirmen</p>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -665,164 +740,212 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
 
   const fase = sala?.fase_actual ?? 'idle';
 
+  // Tiempo de respuesta legible (ms → "2.3s")
+  const tiempoResp = (ms: number | null) =>
+    ms && sala?.fase_inicio ? `${((ms - sala.fase_inicio) / 1000).toFixed(1)}s` : null;
+
   // ── RENDER ───────────────────────────────────────────────────────────────
   return (
     <div className="text-white flex flex-col" style={{ height: '100dvh', overflow: 'hidden' }}
       onClick={desbloquearAudio}>
       <Fondo src={fondoActual} />
 
+      {/* Banner audio */}
       {!audioOK && (
-        <button className="fixed top-0 inset-x-0 z-50 bg-neonPink text-black text-center py-3 font-black text-sm"
+        <button className="fixed top-0 inset-x-0 z-50 font-black text-sm text-black text-center py-2.5"
+          style={{ background: 'linear-gradient(90deg,#ff00cc,#cc00ff)', boxShadow: '0 2px 20px rgba(255,0,200,0.6)' }}
           onClick={desbloquearAudio}>
           🔊 TAP AQUÍ PARA ACTIVAR EL AUDIO
         </button>
       )}
 
       {/* ── HEADER ── */}
-      <div className={`relative z-10 flex justify-between items-center px-4 pb-1 flex-shrink-0 ${!audioOK ? 'pt-12' : 'pt-3'}`}>
-        <div style={{ filter: 'drop-shadow(0 0 10px rgba(255,0,255,0.8))' }}>
+      <div className={`relative z-10 flex justify-between items-center px-4 flex-shrink-0 ${!audioOK ? 'pt-11 pb-1' : 'pt-3 pb-1'}`}>
+        {/* Logo */}
+        <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
           <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(0.85rem, 3.5vw, 1.05rem)', lineHeight: 1 }}>
+            style={{ fontSize: 'clamp(0.8rem, 3.5vw, 1rem)', lineHeight: 1 }}>
             ¿QUIÉN LA SABE?
           </span>
         </div>
         <div className="flex items-center gap-2">
           {modoEntrenamiento && (
-            <span className="text-yellow-400 text-[8px] font-black uppercase bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">⚡ Entrenamiento</span>
+            <span className="text-yellow-400 text-[8px] font-black uppercase bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">⚡ Entr.</span>
           )}
-          <span className="text-white/25 text-[9px] font-bold uppercase">{sala.codigo_acceso}</span>
+          <span className="text-white/25 text-[9px] font-bold">{sala.codigo_acceso}</span>
         </div>
       </div>
 
       {/* ── MAIN: LEFT + RIGHT ── */}
-      <div className="relative z-10 flex flex-1 gap-2 px-3 pb-2 overflow-hidden min-h-0">
+      <div className="relative z-10 flex flex-1 gap-2.5 px-3 pb-2 overflow-hidden min-h-0">
 
-        {/* LEFT */}
+        {/* ──────── LEFT ──────── */}
         <div className="flex flex-col flex-1 gap-2 min-w-0 overflow-hidden">
 
-          {/* Display principal */}
-          <div className="bg-black/60 border border-neonCyan/20 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ minHeight: '96px' }}>
+          {/* ▶ Display digital estilo LED */}
+          <div className="rounded-2xl flex-shrink-0 overflow-hidden"
+            style={{
+              background: 'linear-gradient(180deg, rgba(0,10,20,0.9) 0%, rgba(0,20,10,0.85) 100%)',
+              border: '1px solid rgba(0,255,136,0.25)',
+              boxShadow: '0 0 30px rgba(0,255,100,0.08), inset 0 1px 0 rgba(255,255,255,0.05)',
+              minHeight: '100px',
+            }}>
             {fase === 'escuchando' ? (
-              <div className="flex flex-col items-center gap-1 py-2">
+              <div className="flex flex-col items-center justify-center h-full py-3 gap-1">
                 {trackInfo?.image && (
-                  <img src={trackInfo.image}
-                    className="w-12 h-12 rounded-xl shadow-lg mb-1"
-                    style={{ animation: 'pulse 1s infinite' }} />
+                  <img src={trackInfo.image} className="w-10 h-10 rounded-xl shadow-lg mb-1 opacity-80" />
                 )}
-                <p className="font-black text-neonCyan"
-                  style={{
-                    fontSize: 'clamp(2.5rem, 12vw, 4rem)',
-                    textShadow: '0 0 20px rgba(0,255,255,0.7)',
-                    fontVariantNumeric: 'tabular-nums',
+                <div className="flex items-baseline gap-2">
+                  <span style={{
+                    fontFamily: '"Courier New", "Lucida Console", monospace',
+                    fontSize: 'clamp(2.8rem, 14vw, 4.8rem)',
+                    fontWeight: 900,
+                    color: '#39ff14',
+                    textShadow: '0 0 8px #39ff14, 0 0 20px #39ff14, 0 0 40px #39ff14',
+                    letterSpacing: '0.05em',
                     lineHeight: 1,
                   }}>
-                  {String(timerCancion).padStart(2, '0')}
-                </p>
-                <p className="text-white/30 text-[8px] uppercase tracking-widest">seg</p>
+                    {String(timerCancion).padStart(2, '0')}
+                  </span>
+                  <span style={{
+                    fontFamily: '"Courier New", monospace',
+                    fontWeight: 900,
+                    fontSize: 'clamp(1rem, 5vw, 1.6rem)',
+                    color: '#39ff14',
+                    textShadow: '0 0 10px #39ff14',
+                    opacity: 0.8,
+                    letterSpacing: '0.1em',
+                  }}>
+                    SEC
+                  </span>
+                </div>
+                <p className="text-white/20 text-[8px] uppercase tracking-[0.25em]">escuchando</p>
               </div>
             ) : fase === 'respondiendo' ? (
-              <div className="flex flex-col items-center gap-1 py-2">
-                <p className="text-white/40 text-[9px] uppercase tracking-widest mb-1">Respondé</p>
-                <p className={`font-black leading-none ${timerRespuesta <= 5 ? 'text-red-400' : 'text-neonPink'}`}
-                  style={{
-                    fontSize: 'clamp(2.5rem, 12vw, 4rem)',
-                    textShadow: timerRespuesta <= 5 ? '0 0 20px rgba(255,60,60,0.8)' : '0 0 20px rgba(255,0,200,0.5)',
-                    fontVariantNumeric: 'tabular-nums',
+              <div className="flex flex-col items-center justify-center h-full py-3 gap-1">
+                <p className="text-white/40 text-[9px] uppercase tracking-[0.2em] mb-0.5">respondé!</p>
+                <div className="flex items-baseline gap-2">
+                  <span style={{
+                    fontFamily: '"Courier New", "Lucida Console", monospace',
+                    fontSize: 'clamp(2.8rem, 14vw, 4.8rem)',
+                    fontWeight: 900,
+                    color: timerRespuesta <= 5 ? '#ff4444' : '#ff00cc',
+                    textShadow: timerRespuesta <= 5
+                      ? '0 0 8px #ff4444, 0 0 20px #ff4444, 0 0 40px #ff4444'
+                      : '0 0 8px #ff00cc, 0 0 20px #ff00cc, 0 0 40px #ff00cc',
+                    letterSpacing: '0.05em',
                     lineHeight: 1,
                   }}>
-                  {timerRespuesta}
-                </p>
-                <p className="text-white/30 text-[8px] uppercase tracking-widest">seg</p>
+                    {String(timerRespuesta).padStart(2, '0')}
+                  </span>
+                  <span style={{
+                    fontFamily: '"Courier New", monospace',
+                    fontWeight: 900,
+                    fontSize: 'clamp(1rem, 5vw, 1.6rem)',
+                    color: timerRespuesta <= 5 ? '#ff4444' : '#ff00cc',
+                    textShadow: timerRespuesta <= 5 ? '0 0 10px #ff4444' : '0 0 10px #ff00cc',
+                    opacity: 0.8,
+                    letterSpacing: '0.1em',
+                  }}>
+                    SEC
+                  </span>
+                </div>
               </div>
             ) : fase === 'resultado' ? (
-              <div className="text-center px-3 py-2">
-                <p className="text-yellow-400 font-black text-sm leading-snug">{sala.respuesta_correcta}</p>
+              <div className="flex flex-col items-center justify-center h-full py-3 px-3 gap-1.5">
+                <p className="text-[8px] uppercase tracking-[0.2em] text-yellow-400/60">era...</p>
+                <p className="text-yellow-400 font-black text-sm text-center leading-snug"
+                  style={{ textShadow: '0 0 15px rgba(250,200,0,0.5)' }}>
+                  {sala.respuesta_correcta}
+                </p>
                 {trackInfo?.image && (
-                  <img src={trackInfo.image} className="w-8 h-8 rounded-lg mx-auto mt-1 opacity-60" />
+                  <img src={trackInfo.image} className="w-8 h-8 rounded-lg opacity-50 mt-0.5" />
                 )}
               </div>
             ) : (
-              <p className="text-white/20 text-xs font-bold">
-                {cargando ? '⏳ buscando...' : esHost ? '▶ siguiente canción' : 'esperando...'}
-              </p>
+              <div className="flex items-center justify-center h-full">
+                <p className="text-white/15 text-xs font-bold uppercase tracking-widest">
+                  {cargando ? '⏳ buscando...' : esHost ? '▶ siguiente' : 'esperando...'}
+                </p>
+              </div>
             )}
           </div>
 
-          {/* Controles host */}
+          {/* Host: siguiente canción */}
           {esHost && (fase === 'idle' || fase === 'resultado') && (
             <button onClick={siguienteCancion} disabled={cargando}
-              className="w-full py-3 rounded-2xl font-black text-sm bg-neonCyan text-black shadow-neon-cyan hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 flex-shrink-0">
+              className="w-full py-3 rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-40 flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg,#00ffee,#00ccbb)',
+                color: '#000',
+                boxShadow: cargando ? 'none' : '0 0 20px rgba(0,255,238,0.35)',
+              }}>
               {cargando ? '⏳ Buscando...' : '🎵 SIGUIENTE CANCIÓN'}
             </button>
           )}
 
           {/* ── RESULTADOS DE RONDA ── */}
           {fase === 'resultado' && (
-            <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0">
-              {/* Canción correcta */}
-              <div className="bg-yellow-400/10 border border-yellow-400/40 rounded-2xl p-3 flex-shrink-0">
-                <p className="text-[9px] uppercase tracking-widest text-yellow-400/70 mb-0.5">Era...</p>
-                <p className="text-yellow-400 font-black text-sm leading-snug">{sala.respuesta_correcta}</p>
-              </div>
-              {/* Quién acertó */}
-              <div className="flex flex-col gap-1.5 flex-shrink-0">
-                {(resultadosRonda.length > 0 ? resultadosRonda : jugadores)
-                  .sort((a: any, b: any) => (a.respondio_en ?? Infinity) - (b.respondio_en ?? Infinity))
-                  .map((j: any, i: number) => {
-                    const acerto = j.respuesta_ronda === sala.respuesta_correcta;
-                    const ptsGanados = acerto ? (PUNTOS_TABLA[
-                      (resultadosRonda.length > 0 ? resultadosRonda : jugadores)
-                        .filter((x: any) => x.respuesta_ronda === sala.respuesta_correcta)
-                        .sort((a: any, b: any) => (a.respondio_en ?? Infinity) - (b.respondio_en ?? Infinity))
-                        .findIndex((x: any) => x.user_id === j.user_id)
-                    ] ?? 1) : 0;
-                    return (
-                      <div key={j.user_id}
-                        className={`flex items-center gap-2 rounded-xl px-3 py-2 border transition-all
-                          ${acerto ? 'bg-green-500/15 border-green-500/30' : 'bg-white/5 border-white/10'}`}>
-                        <img src={j.profiles?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0" />
-                        <p className="text-xs font-bold flex-1 truncate">{j.profiles?.username}</p>
-                        {acerto ? (
-                          <span className="text-green-400 font-black text-xs whitespace-nowrap">+{ptsGanados} pts</span>
-                        ) : (
-                          <span className="text-white/25 text-xs">—</span>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
+            <div className="flex flex-col gap-1.5 overflow-y-auto flex-1 min-h-0">
+              {(resultadosRonda.length > 0 ? resultadosRonda : jugadores)
+                .sort((a: any, b: any) => {
+                  const aOk = a.respuesta_ronda === sala.respuesta_correcta;
+                  const bOk = b.respuesta_ronda === sala.respuesta_correcta;
+                  if (aOk && !bOk) return -1;
+                  if (!aOk && bOk) return 1;
+                  return (a.respondio_en ?? Infinity) - (b.respondio_en ?? Infinity);
+                })
+                .map((j: any) => {
+                  const acerto = j.respuesta_ronda === sala.respuesta_correcta;
+                  const posCorrectos = (resultadosRonda.length > 0 ? resultadosRonda : jugadores)
+                    .filter((x: any) => x.respuesta_ronda === sala.respuesta_correcta)
+                    .sort((a: any, b: any) => (a.respondio_en ?? Infinity) - (b.respondio_en ?? Infinity))
+                    .findIndex((x: any) => x.user_id === j.user_id);
+                  const pts = acerto ? (PUNTOS_TABLA[posCorrectos] ?? 1) : 0;
+                  const t   = tiempoResp(j.respondio_en);
+                  return (
+                    <div key={j.user_id}
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2 border flex-shrink-0
+                        ${acerto ? 'bg-green-500/12 border-green-500/25' : 'bg-white/4 border-white/8'}`}>
+                      <img src={j.profiles?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0" />
+                      <p className="text-xs font-bold flex-1 truncate">{j.profiles?.username}</p>
+                      {t && <span className="text-white/30 text-[9px]">{t}</span>}
+                      {acerto
+                        ? <span className="text-green-400 font-black text-xs ml-1">+{pts}</span>
+                        : <span className="text-white/20 text-xs ml-1">—</span>}
+                    </div>
+                  );
+                })}
             </div>
           )}
 
-          {/* Opciones multiple choice */}
+          {/* ── OPCIONES MULTIPLE CHOICE ── */}
           {fase === 'respondiendo' && sala.modo_juego === 'opciones' && opciones.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 flex-1 content-start">
+            <div className="grid grid-cols-2 gap-2 flex-1 content-start overflow-hidden">
               {opciones.map((op: string, i: number) => {
                 const esElegida  = miRespuesta === op;
                 const esCorrecta = yaRespondio && op === sala.respuesta_correcta;
-                const esMal      = yaRespondio && esElegida && op !== sala.respuesta_correcta;
+                const esMal      = yaRespondio && esElegida && !esCorrecta;
                 return (
-                  <button
-                    key={i}
-                    onClick={() => responderOpcion(op)}
-                    disabled={yaRespondio}
-                    className={`rounded-2xl p-3 text-xs font-black text-center leading-snug transition-all active:scale-95 border-2
-                      ${esCorrecta
-                        ? 'bg-green-500/30 border-green-400 text-green-300'
-                        : esMal
-                        ? 'bg-red-500/30 border-red-500 text-red-300'
-                        : esElegida
-                        ? 'bg-neonCyan/20 border-neonCyan text-neonCyan'
-                        : 'bg-white/5 border-white/15 text-white hover:bg-white/10 hover:border-white/30'}`}
-                    style={{ minHeight: '56px' }}
-                  >
+                  <button key={i} onClick={() => responderOpcion(op)} disabled={yaRespondio}
+                    className="rounded-2xl text-xs font-black text-center leading-snug transition-all active:scale-95 flex items-center justify-center"
+                    style={{
+                      minHeight: '54px',
+                      padding: '0.6rem',
+                      border: `2px solid ${esCorrecta ? '#4ade80' : esMal ? '#f87171' : esElegida ? '#00ffee' : 'rgba(255,255,255,0.12)'}`,
+                      background: esCorrecta ? 'rgba(74,222,128,0.18)'
+                        : esMal ? 'rgba(248,113,113,0.18)'
+                        : esElegida ? 'rgba(0,255,238,0.15)'
+                        : 'rgba(255,255,255,0.04)',
+                      color: esCorrecta ? '#86efac' : esMal ? '#fca5a5' : esElegida ? '#00ffee' : '#fff',
+                      boxShadow: esElegida && !yaRespondio ? '0 0 12px rgba(0,255,238,0.3)' : 'none',
+                    }}>
                     {op}
                   </button>
                 );
               })}
               {yaRespondio && (
-                <div className="col-span-2 text-center py-2">
+                <div className="col-span-2 text-center py-1 flex-shrink-0">
                   <p className={`font-black text-sm ${miRespuesta === sala.respuesta_correcta ? 'text-green-400' : 'text-red-400'}`}>
                     {miRespuesta === sala.respuesta_correcta ? '✓ ¡CORRECTO!' : '✗ Incorrecto'}
                   </p>
@@ -831,128 +954,159 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
             </div>
           )}
 
-          {/* Input texto */}
+          {/* ── INPUT TEXTO ── */}
           {fase === 'respondiendo' && sala.modo_juego === 'texto' && (
-            <div className="flex flex-col gap-2 flex-shrink-0"
-              onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
               {!yaRespondio ? (
                 <>
                   <input type="text" value={miTextoCancion}
                     onChange={e => setMiTextoCancion(e.target.value)}
-                    placeholder="Nombre de la canción..."
-                    className="w-full bg-white/5 border border-neonCyan/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-neonCyan"
-                    style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                    placeholder="Canción..."
+                    className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none"
+                    style={{ background: 'rgba(0,255,238,0.07)', border: '1.5px solid rgba(0,255,238,0.3)',
+                      userSelect: 'text', WebkitUserSelect: 'text' }}
                   />
                   <input type="text" value={miTextoArtista}
                     onChange={e => setMiTextoArtista(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && responderTexto()}
                     placeholder="Artista..."
-                    className="w-full bg-white/5 border border-neonPink/40 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-neonPink"
-                    style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                    className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none"
+                    style={{ background: 'rgba(255,0,200,0.07)', border: '1.5px solid rgba(255,0,200,0.3)',
+                      userSelect: 'text', WebkitUserSelect: 'text' }}
                   />
                   <button onClick={e => { e.stopPropagation(); responderTexto(); }}
                     disabled={!miTextoCancion.trim() && !miTextoArtista.trim()}
-                    className="w-full py-3 rounded-2xl font-black text-sm bg-neonPink text-white shadow-neon-pink active:scale-95 transition-all disabled:opacity-40">
+                    className="w-full py-3 rounded-2xl font-black text-sm active:scale-95 transition-all disabled:opacity-40"
+                    style={{ background: 'linear-gradient(135deg,#ff00cc,#cc00ff)',
+                      color: '#fff', boxShadow: '0 0 20px rgba(255,0,200,0.4)' }}>
                     ↑ ENVIAR
                   </button>
                 </>
               ) : (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
-                  <p className="text-white/50 text-xs">Respondiste:</p>
-                  <p className="font-black text-sm text-neonCyan mt-1">{miRespuesta}</p>
+                <div className="rounded-xl p-3 text-center border border-white/10"
+                  style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  <p className="text-white/40 text-[9px] uppercase tracking-widest">Respondiste</p>
+                  <p className="font-black text-sm text-neonCyan mt-0.5">{miRespuesta}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Escuchando — mensaje para jugadores */}
           {fase === 'escuchando' && !esHost && (
-            <div className="text-center flex-shrink-0">
-              <p className="text-white/30 text-xs font-bold uppercase tracking-widest animate-pulse">
-                Escuchá con atención...
-              </p>
-            </div>
+            <p className="text-white/20 text-[10px] font-bold uppercase tracking-widest text-center flex-shrink-0">
+              Escuchá con atención...
+            </p>
           )}
         </div>
 
-        {/* RIGHT: scores + chat */}
-        <div className="flex flex-col gap-2 flex-shrink-0" style={{ width: '132px' }}>
+        {/* ──────── RIGHT ──────── */}
+        <div className="flex flex-col gap-2 flex-shrink-0" style={{ width: '128px' }}>
 
-          {/* Scoreboard */}
-          <div className="bg-black/70 border border-white/10 rounded-2xl p-2 flex flex-col flex-1 overflow-hidden min-h-0">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 flex-shrink-0">PLAYERS</p>
+          {/* PLAYERS — tabla con tiempos como en el mock */}
+          <div className="rounded-2xl p-2 flex flex-col flex-1 overflow-hidden min-h-0"
+            style={{ background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-1.5 flex-shrink-0">
+              PLAYERS
+            </p>
             <div className="flex flex-col gap-1 overflow-y-auto flex-1">
               {jugadoresOrden.map((j: any, i: number) => {
                 const respondio = j.respuesta_ronda != null;
+                const t = fase === 'resultado' ? tiempoResp(j.respondio_en) : null;
                 return (
                   <div key={j.user_id}
-                    className={`flex items-center gap-1.5 rounded-lg p-1.5 transition-all flex-shrink-0
-                      ${respondio && fase === 'respondiendo' ? 'bg-neonCyan/15 border border-neonCyan/25' : 'bg-white/5'}`}>
+                    className="flex items-center gap-1.5 rounded-lg p-1.5 flex-shrink-0 transition-all"
+                    style={{
+                      background: respondio && fase === 'respondiendo'
+                        ? 'rgba(0,255,238,0.1)' : 'rgba(255,255,255,0.04)',
+                      border: respondio && fase === 'respondiendo'
+                        ? '1px solid rgba(0,255,238,0.2)' : '1px solid transparent',
+                    }}>
                     <div className="relative flex-shrink-0">
-                      <img src={j.profiles?.avatar_url} className="w-7 h-7 rounded-full" />
+                      <img src={j.profiles?.avatar_url} className="w-6 h-6 rounded-full" />
                       {i === 0 && jugadoresOrden.length > 1 && (
                         <span className="absolute -top-1.5 -right-1 text-[9px]">👑</span>
-                      )}
-                      {respondio && fase === 'respondiendo' && (
-                        <span className="absolute -bottom-0.5 -right-0.5 text-[9px]">✓</span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[9px] font-bold truncate leading-tight">{j.profiles?.username}</p>
-                      <p className="text-neonCyan font-black text-[10px] leading-tight">{j.puntos ?? 0} pts</p>
+                      <p className="font-black text-[10px] leading-tight" style={{ color: '#00ffee' }}>
+                        {j.puntos ?? 0} pts
+                      </p>
                     </div>
+                    {t && <span className="text-white/35 text-[8px] flex-shrink-0">{t}</span>}
+                    {respondio && fase === 'respondiendo' && !t && (
+                      <span className="text-[9px] flex-shrink-0" style={{ color: '#00ffee' }}>✓</span>
+                    )}
                   </div>
                 );
               })}
             </div>
+            {/* Tiempo promedio */}
+            {fase === 'resultado' && resultadosRonda.length > 0 && (() => {
+              const tiempos = resultadosRonda
+                .filter((j: any) => j.respondio_en && sala?.fase_inicio)
+                .map((j: any) => (j.respondio_en - sala.fase_inicio) / 1000);
+              if (!tiempos.length) return null;
+              const avg = (tiempos.reduce((a: number, b: number) => a + b, 0) / tiempos.length).toFixed(1);
+              return (
+                <div className="flex-shrink-0 border-t border-white/8 pt-1.5 mt-1">
+                  <p className="text-[8px] text-white/25 uppercase tracking-wider">Tiempo Promedio</p>
+                  <p className="text-white/50 font-black text-[10px]">{avg}s</p>
+                </div>
+              );
+            })()}
           </div>
 
-          {/* Chat */}
-          <div className="bg-black/70 border border-white/10 rounded-2xl flex flex-col overflow-hidden flex-shrink-0"
-            style={{ height: '140px' }}
+          {/* CHAT */}
+          <div className="rounded-2xl flex flex-col overflow-hidden flex-shrink-0"
+            style={{ height: '136px', background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,255,255,0.1)' }}
             onClick={e => e.stopPropagation()}>
             <div ref={chatRef} className="flex-1 overflow-y-auto p-2 flex flex-col gap-1 min-h-0">
               {mensajes.length === 0 && (
-                <p className="text-white/20 text-[9px] text-center mt-4">Chat vacío</p>
+                <p className="text-white/15 text-[9px] text-center mt-4">Chat</p>
               )}
               {mensajes.map((m, i) => (
                 <div key={i} className="flex items-start gap-1 flex-shrink-0">
                   {m.avatar && <img src={m.avatar} className="w-4 h-4 rounded-full mt-0.5 flex-shrink-0" />}
                   <p className="text-[9px] leading-snug break-all">
-                    <span className="text-neonCyan font-black">{m.user}: </span>
-                    <span className="text-white/80">{m.text}</span>
+                    <span className="font-black" style={{ color: '#00ffee' }}>{m.user}: </span>
+                    <span className="text-white/75">{m.text}</span>
                   </p>
                 </div>
               ))}
             </div>
-            <div className="flex border-t border-white/10 flex-shrink-0">
+            <div className="flex flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <input type="text" value={mensajeInput}
                 onChange={e => setMensajeInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && enviarMensaje()}
-                placeholder="Escribí..."
-                className="flex-1 bg-transparent px-2 py-2 text-[10px] text-white placeholder:text-white/25 focus:outline-none"
+                placeholder="Type a message..."
+                className="flex-1 bg-transparent px-2 py-1.5 text-[9px] text-white placeholder:text-white/20 focus:outline-none"
                 style={{ userSelect: 'text', WebkitUserSelect: 'text', minWidth: 0 }}
               />
               <button onClick={e => { e.stopPropagation(); enviarMensaje(); }}
-                className="px-2 py-2 text-neonCyan font-black text-sm flex-shrink-0">↑</button>
+                className="px-2 py-1.5 font-black text-sm flex-shrink-0"
+                style={{ color: '#00ffee' }}>↑</button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* FOOTER avatares */}
-      <div className="relative z-10 flex gap-2 justify-center flex-wrap px-3 pb-3 flex-shrink-0">
+      {/* ── FOOTER: avatares ── */}
+      <div className="relative z-10 flex gap-1.5 justify-center flex-wrap px-3 pb-3 flex-shrink-0">
         {jugadoresOrden.map((j: any, i: number) => (
           <div key={j.user_id}
-            className={`flex flex-col items-center px-2 py-1.5 rounded-xl border transition-all
-              ${j.respuesta_ronda && fase === 'respondiendo'
-                ? 'border-neonCyan bg-neonCyan/20'
-                : 'border-transparent bg-white/5'}`}>
+            className="flex flex-col items-center px-2 py-1 rounded-xl transition-all"
+            style={{
+              background: j.respuesta_ronda && fase === 'respondiendo'
+                ? 'rgba(0,255,238,0.15)' : 'rgba(255,255,255,0.04)',
+              border: j.respuesta_ronda && fase === 'respondiendo'
+                ? '1px solid rgba(0,255,238,0.3)' : '1px solid transparent',
+            }}>
             {i === 0 && jugadoresOrden.length > 1 && (
-              <span className="text-yellow-400 text-[8px] leading-none mb-0.5">👑</span>
+              <span className="text-yellow-400 text-[7px] leading-none mb-0.5">👑</span>
             )}
             <img src={j.profiles?.avatar_url} className="w-8 h-8 rounded-full" />
-            <p className="text-neonCyan font-black text-[10px] mt-0.5">{j.puntos ?? 0}</p>
+            <p className="font-black text-[10px] mt-0.5" style={{ color: '#00ffee' }}>{j.puntos ?? 0}</p>
           </div>
         ))}
       </div>
