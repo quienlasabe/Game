@@ -3,37 +3,23 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/router';
 
 const TEMATICAS = ['Rock', 'Pop', '80s', '90s', 'Metal', 'Blues'];
-
 const MODOS = [
-  {
-    id:    'opciones',
-    icon:  '🎯',
-    label: 'Con Opciones',
-    desc:  'Múltiple choice — 4 pistas, elegís la correcta',
-  },
-  {
-    id:    'texto',
-    icon:  '✏️',
-    label: 'Sin Opciones',
-    desc:  'Escribís artista y canción — 20 seg, más puntos si sos rápido',
-  },
-  {
-    id:    'juntada',
-    icon:  '🎉',
-    label: 'Modo Juntada',
-    desc:  'Dos equipos, un solo celular, el host decide quién acertó',
-  },
+  { id: 'opciones', icon: '🎯', label: 'Con Opciones', desc: 'Multiple choice, 4 pistas' },
+  { id: 'texto',    icon: '✏️', label: 'Sin Opciones', desc: 'Escribís artista y canción' },
+  { id: 'juntada',  icon: '🎉', label: 'Modo Juntada', desc: 'Un cel, dos equipos, el host decide' },
 ];
 
 export default function Lobby({ session, user }: { session: any; user: any }) {
   const router = useRouter();
   const [perfil, setPerfil] = useState<any>(null);
+  const [stats,  setStats]  = useState({ jugadores: 0, activas: 0, disponibles: 0 });
   const [codigoSala, setCodigoSala] = useState('');
-  const [creando,    setCreando]    = useState(false);
-  const [uniendose,  setUniendose]  = useState(false);
+  const [creando,   setCreando]   = useState(false);
+  const [uniendose, setUniendose] = useState(false);
+  const [expandConfig, setExpandConfig] = useState(false);
 
   // Config sala
-  const [tematicasSeleccionadas, setTematicasSeleccionadas] = useState<string[]>(['Rock']);
+  const [tematicas,     setTematicas]     = useState<string[]>(['Rock']);
   const [maxJugadores,  setMaxJugadores]  = useState(5);
   const [tiempoPreview, setTiempoPreview] = useState(15);
   const [modoJuego,     setModoJuego]     = useState('opciones');
@@ -44,15 +30,21 @@ export default function Lobby({ session, user }: { session: any; user: any }) {
     if (!session) { router.push('/'); return; }
     supabase.from('profiles').select('*').eq('id', user.id).single()
       .then(({ data }) => setPerfil(data));
+    cargarStats();
   }, [session, user, router]);
 
-  const toggleTematica = (t: string) => {
-    setTematicasSeleccionadas(prev =>
-      prev.includes(t)
-        ? prev.length > 1 ? prev.filter(x => x !== t) : prev
-        : [...prev, t]
-    );
+  const cargarStats = async () => {
+    const { data: salas } = await supabase.from('salas').select('estado');
+    const { data: jugs }  = await supabase.from('sala_jugadores').select('id');
+    const activas    = (salas ?? []).filter(s => s.estado === 'jugando').length;
+    const disponibles = (salas ?? []).filter(s => s.estado === 'esperando').length;
+    setStats({ jugadores: jugs?.length ?? 0, activas, disponibles });
   };
+
+  const toggleTematica = (t: string) =>
+    setTematicas(prev =>
+      prev.includes(t) ? (prev.length > 1 ? prev.filter(x => x !== t) : prev) : [...prev, t]
+    );
 
   const crearSala = async () => {
     setCreando(true);
@@ -61,208 +53,244 @@ export default function Lobby({ session, user }: { session: any; user: any }) {
       host_id:        user.id,
       codigo_acceso:  codigo,
       estado:         'esperando',
-      tematica:       tematicasSeleccionadas.join(','),
+      tematica:       tematicas.join(','),
       max_jugadores:  maxJugadores,
       tiempo_preview: tiempoPreview,
       modo_juego:     modoJuego,
       equipo1_nombre: equipo1 || 'Equipo 1',
       equipo2_nombre: equipo2 || 'Equipo 2',
     }]).select().single();
-
     if (error) { alert('Error al crear sala'); setCreando(false); return; }
-    await supabase.from('sala_jugadores').insert([{
-      sala_id: data.id, user_id: user.id, confirmado: true,
-    }]);
+    await supabase.from('sala_jugadores').insert([{ sala_id: data.id, user_id: user.id, confirmado: true }]);
     router.push(`/sala/${codigo}`);
   };
 
   const unirseASala = async () => {
     if (!codigoSala) return;
     setUniendose(true);
-    const { data } = await supabase.from('salas').select('id')
-      .eq('codigo_acceso', codigoSala).single();
+    const { data } = await supabase.from('salas').select('id').eq('codigo_acceso', codigoSala).single();
     if (!data) { alert('Sala no encontrada'); setUniendose(false); return; }
     await supabase.from('sala_jugadores')
-      .upsert([{ sala_id: data.id, user_id: user.id, confirmado: false }],
-        { onConflict: 'sala_id,user_id' });
+      .upsert([{ sala_id: data.id, user_id: user.id, confirmado: false }], { onConflict: 'sala_id,user_id' });
     router.push(`/sala/${codigoSala}`);
+  };
+
+  const cerrarSesion = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
   };
 
   if (!perfil) return <div className="bg-darkBg min-h-screen" />;
 
   return (
-    <main
-      className="min-h-screen bg-darkBg text-white flex flex-col items-center p-6 md:p-10"
+    <main className="min-h-screen text-white flex flex-col items-center"
       style={{
-        backgroundImage: "linear-gradient(rgba(10,10,10,0.92), rgba(10,10,10,0.92)), url('/backgrounds/portada.jpg')",
+        backgroundImage: "linear-gradient(rgba(8,8,18,0.94), rgba(8,8,18,0.97)), url('/backgrounds/portada.jpg')",
         backgroundSize: 'cover',
-      }}
-    >
-      <div className="w-full max-w-4xl flex flex-col gap-6">
+        backgroundAttachment: 'fixed',
+      }}>
 
-        {/* Perfil */}
-        <div className="flex justify-between items-center bg-white/5 px-6 py-4 rounded-3xl border border-white/10 backdrop-blur-sm">
-          <div className="flex items-center gap-4">
-            <img src={perfil.avatar_url} className="w-14 h-14 rounded-full border-2 border-neonCyan" />
-            <div>
-              <h2 className="text-xl font-black italic">{perfil.username}</h2>
-              <p className="text-neonCyan text-[10px] font-bold uppercase tracking-widest">
-                Rango: {perfil.rango}
+      {/* ── HEADER ── */}
+      <header className="w-full max-w-2xl flex items-center justify-between px-5 pt-6 pb-2">
+        {/* Logo */}
+        <div style={{ filter: 'drop-shadow(0 0 16px rgba(255,0,255,0.8)) drop-shadow(0 0 32px rgba(0,255,255,0.4))' }}>
+          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+            style={{ fontSize: 'clamp(1.2rem, 5vw, 1.6rem)', lineHeight: 1 }}>
+            ¿Quién la Sabe?
+          </span>
+        </div>
+        {/* Perfil chip */}
+        <button onClick={cerrarSesion}
+          className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/10 transition-all">
+          <img src={perfil.avatar_url} className="w-7 h-7 rounded-full border border-neonCyan/40" />
+          <span className="text-xs font-black">{perfil.username}</span>
+          <span className="text-white/25 text-[9px]">✕</span>
+        </button>
+      </header>
+
+      <div className="w-full max-w-2xl px-5 flex flex-col gap-5 pb-10">
+
+        {/* ── STATS ── */}
+        <div className="grid grid-cols-3 gap-3 mt-2">
+          {[
+            { label: 'Jugando ahora', value: stats.jugadores, color: '#00ffff' },
+            { label: 'Salas activas',  value: stats.activas,   color: '#ff00ff' },
+            { label: 'Disponibles',    value: stats.disponibles, color: '#39ff14' },
+          ].map(s => (
+            <div key={s.label}
+              className="rounded-2xl p-3 text-center border border-white/8"
+              style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <p className="font-black text-2xl leading-none" style={{ color: s.color, textShadow: `0 0 12px ${s.color}` }}>
+                {s.value}
               </p>
+              <p className="text-[9px] uppercase tracking-widest text-white/35 mt-1">{s.label}</p>
             </div>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Victorias</p>
-            <p className="text-4xl font-black text-neonPink">{perfil.partidas_ganadas ?? 0}</p>
-          </div>
+          ))}
         </div>
 
-        {/* Dos columnas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* ── CREAR SALA ── */}
+        <div className="rounded-3xl border overflow-hidden"
+          style={{ background: 'rgba(0,0,0,0.55)', borderColor: 'rgba(0,255,255,0.2)' }}>
 
-          {/* ── CREAR SALA ── */}
-          <div className="bg-white/5 rounded-3xl border border-neonCyan/30 p-6 flex flex-col gap-5 backdrop-blur-sm">
-            <h3 className="text-xl font-black italic text-neonCyan tracking-tight">🎸 CREAR SALA</h3>
-
-            {/* Modo de juego */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Modo de juego</p>
-              <div className="flex flex-col gap-2">
-                {MODOS.map(m => (
-                  <button
-                    key={m.id}
-                    onClick={() => setModoJuego(m.id)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all
-                      ${modoJuego === m.id
-                        ? 'bg-neonCyan/10 border-neonCyan text-white'
-                        : 'bg-transparent border-white/10 text-white/50 hover:border-white/30'}`}
-                  >
-                    <span className="text-xl">{m.icon}</span>
-                    <div>
-                      <p className={`font-black text-sm ${modoJuego === m.id ? 'text-neonCyan' : ''}`}>
-                        {m.label}
-                      </p>
-                      <p className="text-[10px] leading-tight opacity-70">{m.desc}</p>
-                    </div>
-                    {modoJuego === m.id && (
-                      <span className="ml-auto text-neonCyan font-black text-xs">✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+          {/* Header crear */}
+          <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/3 transition-all"
+            onClick={() => setExpandConfig(v => !v)}>
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🎸</span>
+              <span className="font-black text-base tracking-tight" style={{ color: '#00ffff' }}>CREAR SALA</span>
             </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-white/30 font-bold uppercase tracking-widest">
+                {MODOS.find(m => m.id === modoJuego)?.label}
+              </span>
+              <span className="text-white/30 text-sm">{expandConfig ? '▲' : '▼'}</span>
+            </div>
+          </button>
 
-            {/* Nombres de equipo para Juntada */}
-            {modoJuego === 'juntada' && (
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Equipo 1</p>
-                  <input
-                    type="text"
-                    value={equipo1}
-                    onChange={e => setEquipo1(e.target.value)}
-                    maxLength={16}
-                    className="w-full bg-white/5 border border-neonPink/40 rounded-xl px-3 py-2 text-sm font-black text-neonPink focus:outline-none focus:border-neonPink"
-                    placeholder="Equipo 1"
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Equipo 2</p>
-                  <input
-                    type="text"
-                    value={equipo2}
-                    onChange={e => setEquipo2(e.target.value)}
-                    maxLength={16}
-                    className="w-full bg-white/5 border border-neonCyan/40 rounded-xl px-3 py-2 text-sm font-black text-neonCyan focus:outline-none focus:border-neonCyan"
-                    placeholder="Equipo 2"
-                  />
+          {expandConfig && (
+            <div className="px-5 pb-5 flex flex-col gap-4 border-t border-white/8">
+
+              {/* Modo */}
+              <div className="pt-4">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-2">Modo de juego</p>
+                <div className="flex flex-col gap-1.5">
+                  {MODOS.map(m => (
+                    <button key={m.id} onClick={() => setModoJuego(m.id)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-all"
+                      style={{
+                        background: modoJuego === m.id ? 'rgba(0,255,255,0.08)' : 'rgba(255,255,255,0.02)',
+                        borderColor: modoJuego === m.id ? 'rgba(0,255,255,0.5)' : 'rgba(255,255,255,0.08)',
+                      }}>
+                      <span className="text-base flex-shrink-0">{m.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-xs" style={{ color: modoJuego === m.id ? '#00ffff' : 'rgba(255,255,255,0.7)' }}>
+                          {m.label}
+                        </p>
+                        <p className="text-[9px] text-white/30 leading-tight">{m.desc}</p>
+                      </div>
+                      {modoJuego === m.id && <span className="text-[10px] font-black flex-shrink-0" style={{ color: '#00ffff' }}>✓</span>}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {/* Temáticas */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Temática</p>
-              <div className="flex flex-wrap gap-2">
-                {TEMATICAS.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => toggleTematica(t)}
-                    className={`px-3 py-1 rounded-full text-xs font-black border transition-all
-                      ${tematicasSeleccionadas.includes(t)
-                        ? 'bg-neonPink text-black border-neonPink'
-                        : 'bg-transparent text-white/50 border-white/20 hover:border-white/50'}`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* Equipos Juntada */}
+              {modoJuego === 'juntada' && (
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-1.5">Equipo 1</p>
+                    <input type="text" value={equipo1} onChange={e => setEquipo1(e.target.value)} maxLength={16}
+                      placeholder="Equipo 1"
+                      className="w-full rounded-xl px-3 py-2 text-sm font-black focus:outline-none"
+                      style={{ background: 'rgba(255,0,255,0.07)', border: '1.5px solid rgba(255,0,255,0.3)', color: '#ff00ff' }} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-1.5">Equipo 2</p>
+                    <input type="text" value={equipo2} onChange={e => setEquipo2(e.target.value)} maxLength={16}
+                      placeholder="Equipo 2"
+                      className="w-full rounded-xl px-3 py-2 text-sm font-black focus:outline-none"
+                      style={{ background: 'rgba(0,255,255,0.07)', border: '1.5px solid rgba(0,255,255,0.3)', color: '#00ffff' }} />
+                  </div>
+                </div>
+              )}
 
-            {/* Jugadores (solo para modos no-juntada) */}
-            {modoJuego !== 'juntada' && (
+              {/* Temática */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
-                  Jugadores: <span className="text-white">{maxJugadores}</span>
-                </p>
-                <input type="range" min={2} max={8} value={maxJugadores}
-                  onChange={e => setMaxJugadores(+e.target.value)}
-                  className="w-full accent-neonCyan" />
-                <div className="flex justify-between text-[10px] text-white/30 mt-1">
-                  <span>2</span><span>8</span>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-2">Temática</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {TEMATICAS.map(t => (
+                    <button key={t} onClick={() => toggleTematica(t)}
+                      className="px-3 py-1 rounded-full text-[10px] font-black border transition-all"
+                      style={{
+                        background: tematicas.includes(t) ? '#ff00ff' : 'transparent',
+                        borderColor: tematicas.includes(t) ? '#ff00ff' : 'rgba(255,255,255,0.15)',
+                        color: tematicas.includes(t) ? '#000' : 'rgba(255,255,255,0.45)',
+                      }}>
+                      {t}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {/* Tiempo de preview */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
-                Preview: <span className="text-white">{tiempoPreview}s</span>
-              </p>
-              <div className="flex gap-2">
-                {[5, 10, 15].map(t => (
-                  <button key={t} onClick={() => setTiempoPreview(t)}
-                    className={`flex-1 py-2 rounded-xl text-xs font-black border transition-all
-                      ${tiempoPreview === t
-                        ? 'bg-neonCyan text-black border-neonCyan'
-                        : 'bg-transparent text-white/50 border-white/20 hover:border-white/50'}`}>
-                    {t}s
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Jugadores */}
+                {modoJuego !== 'juntada' && (
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-2">
+                      Jugadores: <span className="text-white">{maxJugadores}</span>
+                    </p>
+                    <input type="range" min={2} max={8} value={maxJugadores}
+                      onChange={e => setMaxJugadores(+e.target.value)}
+                      className="w-full accent-cyan-400" />
+                    <div className="flex justify-between text-[9px] text-white/20 mt-0.5"><span>2</span><span>8</span></div>
+                  </div>
+                )}
+
+                {/* Preview */}
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-2">Preview</p>
+                  <div className="flex gap-1.5">
+                    {[5, 10, 15].map(t => (
+                      <button key={t} onClick={() => setTiempoPreview(t)}
+                        className="flex-1 py-1.5 rounded-xl text-[10px] font-black border transition-all"
+                        style={{
+                          background: tiempoPreview === t ? '#00ffff' : 'transparent',
+                          borderColor: tiempoPreview === t ? '#00ffff' : 'rgba(255,255,255,0.15)',
+                          color: tiempoPreview === t ? '#000' : 'rgba(255,255,255,0.4)',
+                        }}>
+                        {t}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
+          )}
 
-            <button
-              onClick={crearSala}
-              disabled={creando}
-              className="mt-auto w-full py-4 rounded-2xl font-black text-lg bg-neonCyan text-black hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-neon-cyan"
-            >
-              {creando ? 'Creando...' : 'CREAR SALA'}
+          <div className="px-5 pb-5">
+            <button onClick={crearSala} disabled={creando}
+              className="w-full py-4 rounded-2xl font-black text-base transition-all active:scale-95 disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(135deg, #00ffff, #00ccee)',
+                color: '#000',
+                boxShadow: '0 0 25px rgba(0,255,255,0.35)',
+              }}>
+              {creando ? 'Creando...' : expandConfig ? '🎮 CREAR SALA' : '🎮 CREAR SALA →'}
             </button>
           </div>
-
-          {/* ── UNIRSE ── */}
-          <div className="bg-white/5 rounded-3xl border border-neonPink/30 p-6 flex flex-col items-center justify-center gap-6 backdrop-blur-sm">
-            <span className="text-5xl">🎟️</span>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Código de sala</p>
-            <input
-              type="text"
-              placeholder="XXXXXX"
-              value={codigoSala}
-              onChange={e => setCodigoSala(e.target.value.toUpperCase())}
-              maxLength={6}
-              className="bg-transparent border-b-4 border-neonPink text-center text-4xl font-black focus:outline-none w-full placeholder:opacity-20 text-neonPink"
-            />
-            <button
-              onClick={unirseASala}
-              disabled={uniendose || !codigoSala}
-              className="w-full py-4 rounded-2xl font-black text-lg bg-neonPink text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-50 shadow-neon-pink"
-            >
-              {uniendose ? 'Uniéndose...' : 'UNIRSE A PARTIDA'}
-            </button>
-          </div>
-
         </div>
+
+        {/* ── UNIRSE ── */}
+        <div className="rounded-3xl border p-5 flex flex-col gap-4"
+          style={{ background: 'rgba(0,0,0,0.55)', borderColor: 'rgba(255,0,255,0.2)' }}>
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🎟️</span>
+            <span className="font-black text-base tracking-tight" style={{ color: '#ff00ff' }}>UNIRSE A PARTIDA</span>
+          </div>
+          <input
+            type="text"
+            placeholder="Código de sala"
+            value={codigoSala}
+            onChange={e => setCodigoSala(e.target.value.toUpperCase())}
+            maxLength={6}
+            className="w-full text-center text-3xl font-black tracking-[0.3em] focus:outline-none rounded-2xl py-3"
+            style={{
+              background: 'rgba(255,0,255,0.06)',
+              border: '2px solid rgba(255,0,255,0.3)',
+              color: '#ff00ff',
+            }}
+          />
+          <button onClick={unirseASala} disabled={uniendose || !codigoSala}
+            className="w-full py-4 rounded-2xl font-black text-base transition-all active:scale-95 disabled:opacity-40"
+            style={{
+              background: 'linear-gradient(135deg, #ff00ff, #cc00cc)',
+              color: '#fff',
+              boxShadow: '0 0 25px rgba(255,0,255,0.35)',
+            }}>
+            {uniendose ? 'Uniéndose...' : 'UNIRSE'}
+          </button>
+        </div>
+
       </div>
     </main>
   );

@@ -74,9 +74,9 @@ function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
       <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
         {/* Logo */}
         <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
-          <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
             style={{ fontSize: 'clamp(1rem, 5vw, 1.3rem)', lineHeight: 1 }}>
-            ¿QUIÉN LA SABE?
+            ¿Quién la Sabe?
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -374,9 +374,9 @@ function ModoJuntada({ sala, user }: any) {
       {/* Header */}
       <div className={`relative z-10 flex justify-between items-center px-4 pb-2 flex-shrink-0 ${!audioOK ? 'pt-12' : 'pt-4'}`}>
         <div style={{ filter: 'drop-shadow(0 0 10px rgba(255,0,255,0.8))' }}>
-          <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
             style={{ fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
-            ¿QUIÉN LA SABE?
+            ¿Quién la Sabe?
           </span>
         </div>
         <span className="text-yellow-400 text-[10px] font-black uppercase bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">
@@ -404,16 +404,40 @@ function ModoJuntada({ sala, user }: any) {
 
         {/* Álbum art + timer canción */}
         {fase === 'escuchando' && (
-          <div className="flex flex-col items-center gap-3">
-            {trackInfo?.image && (
-              <img src={trackInfo.image} className="w-24 h-24 rounded-2xl shadow-2xl animate-pulse" />
-            )}
-            <div className="w-20 h-20 rounded-full border-4 border-neonCyan flex items-center justify-center"
-              style={{ boxShadow: '0 0 20px rgba(0,255,255,0.4)' }}>
-              <p className="font-black text-3xl text-neonCyan"
-                style={{ textShadow: '0 0 15px rgba(0,255,255,0.8)' }}>{timerCancion}</p>
+          <div className="flex flex-col items-center gap-4">
+            {/* Timer circular */}
+            <div className="flex items-center gap-5">
+              {trackInfo?.image && (
+                <img src={trackInfo.image} className="w-16 h-16 rounded-2xl shadow-2xl opacity-80" />
+              )}
+              <div className="w-20 h-20 rounded-full border-4 border-neonCyan flex items-center justify-center"
+                style={{ boxShadow: '0 0 20px rgba(0,255,255,0.4)' }}>
+                <p className="font-black text-3xl text-neonCyan"
+                  style={{ textShadow: '0 0 15px rgba(0,255,255,0.8)' }}>{timerCancion}</p>
+              </div>
             </div>
-            <p className="text-white/40 text-sm font-bold uppercase tracking-widest animate-pulse">Escuchando...</p>
+            <p className="text-white/40 text-xs font-bold uppercase tracking-widest animate-pulse">Escuchando...</p>
+            {/* BUZZER */}
+            <button
+              onClick={() => {
+                clearInterval(timerCancionRef.current!);
+                audioRef.current?.pause();
+                setFase('fin');
+                iniciarTimer();
+              }}
+              className="flex flex-col items-center justify-center gap-1 active:scale-95 transition-all"
+              style={{
+                width: '130px',
+                height: '130px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle at 38% 35%, #ff6666, #cc0000, #7a0000)',
+                boxShadow: '0 0 35px rgba(255,30,30,0.7), 0 8px 24px rgba(0,0,0,0.6), inset 0 2px 8px rgba(255,160,160,0.25)',
+                border: '3px solid rgba(255,100,100,0.45)',
+              }}
+            >
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">BUZZER</span>
+              <span className="font-black text-white" style={{ fontSize: '1.5rem', letterSpacing: '0.05em' }}>JAM!</span>
+            </button>
           </div>
         )}
 
@@ -772,9 +796,9 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
       <div className={`relative z-10 flex justify-between items-center px-4 flex-shrink-0 ${!audioOK ? 'pt-11 pb-1' : 'pt-3 pb-1'}`}>
         {/* Logo */}
         <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
-          <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
             style={{ fontSize: 'clamp(0.8rem, 3.5vw, 1rem)', lineHeight: 1 }}>
-            ¿QUIÉN LA SABE?
+            ¿Quién la Sabe?
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -1150,9 +1174,9 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
         <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
-          <span className="font-black italic text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
+          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
             style={{ fontSize: 'clamp(0.9rem, 4vw, 1.1rem)', lineHeight: 1 }}>
-            ¿QUIÉN LA SABE?
+            ¿Quién la Sabe?
           </span>
         </div>
         <span className="text-yellow-400 text-[10px] font-black bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">
@@ -1163,46 +1187,134 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
       {/* Body */}
       <div className="relative z-10 flex-1 flex gap-3 px-4 pb-4 overflow-hidden min-h-0">
 
-        {/* LEFT: Podio */}
+        {/* LEFT: Podio visual */}
         <div className="flex-1 flex flex-col gap-3 min-w-0">
-          {/* Tu resultado */}
-          {yo && (
-            <div className="rounded-2xl p-4 flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg,rgba(255,0,200,0.15),rgba(0,255,238,0.1))', border: '1px solid rgba(255,255,255,0.15)' }}>
-              <p className="text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1">Tu resultado</p>
-              <div className="flex items-center gap-3">
-                <img src={yo.profiles?.avatar_url} className="w-12 h-12 rounded-full border-2"
-                  style={{ borderColor: miPos === 1 ? '#fbbf24' : miPos === 2 ? '#d1d5db' : '#cd7c2e' }} />
-                <div>
-                  <p className="font-black text-lg leading-none" style={{ color: '#00ffee' }}>{yo.puntos ?? 0} pts</p>
-                  <p className="text-white/50 text-xs mt-0.5">{MEDAL[miPos - 1] ?? `#${miPos}`} puesto</p>
+          {/* Podio */}
+          <div className="rounded-2xl p-4 flex-1 flex flex-col justify-end min-h-0"
+            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-3 flex-shrink-0">Podio</p>
+            {/* Avatares sobre las plataformas */}
+            <div className="flex items-end justify-center gap-2 mb-0">
+              {/* 2do */}
+              {ranking[1] && (
+                <div className="flex flex-col items-center" style={{ flex: 1 }}>
+                  <img src={ranking[1].profiles?.avatar_url}
+                    className="w-9 h-9 rounded-full border-2 mb-1"
+                    style={{ borderColor: '#d1d5db' }} />
+                  <p className="text-[9px] font-black text-white/70 truncate w-full text-center">
+                    {ranking[1].profiles?.username}
+                  </p>
+                  <p className="font-black text-xs mb-1" style={{ color: '#d1d5db' }}>{ranking[1].puntos ?? 0}</p>
+                  <div className="w-full rounded-t-xl flex items-start justify-center pt-2"
+                    style={{
+                      height: '60px',
+                      background: 'linear-gradient(180deg, rgba(209,213,219,0.25), rgba(209,213,219,0.1))',
+                      border: '1px solid rgba(209,213,219,0.35)',
+                      boxShadow: '0 0 12px rgba(209,213,219,0.2)',
+                    }}>
+                    <span className="font-black text-xl" style={{ color: '#d1d5db' }}>2</span>
+                  </div>
                 </div>
+              )}
+              {/* 1ro */}
+              {ranking[0] && (
+                <div className="flex flex-col items-center" style={{ flex: 1 }}>
+                  <span className="text-base mb-0.5">👑</span>
+                  <img src={ranking[0].profiles?.avatar_url}
+                    className="w-12 h-12 rounded-full border-2 mb-1"
+                    style={{ borderColor: '#fbbf24' }} />
+                  <p className="text-[9px] font-black text-white/80 truncate w-full text-center">
+                    {ranking[0].profiles?.username}
+                  </p>
+                  <p className="font-black text-sm mb-1" style={{ color: '#fbbf24', textShadow: '0 0 10px rgba(251,191,36,0.6)' }}>
+                    {ranking[0].puntos ?? 0}
+                  </p>
+                  <div className="w-full rounded-t-xl flex items-start justify-center pt-2"
+                    style={{
+                      height: '90px',
+                      background: 'linear-gradient(180deg, rgba(251,191,36,0.3), rgba(251,191,36,0.1))',
+                      border: '1px solid rgba(251,191,36,0.5)',
+                      boxShadow: '0 0 20px rgba(251,191,36,0.3)',
+                    }}>
+                    <span className="font-black text-2xl" style={{ color: '#fbbf24' }}>1</span>
+                  </div>
+                </div>
+              )}
+              {/* 3ro */}
+              {ranking[2] && (
+                <div className="flex flex-col items-center" style={{ flex: 1 }}>
+                  <img src={ranking[2].profiles?.avatar_url}
+                    className="w-9 h-9 rounded-full border-2 mb-1"
+                    style={{ borderColor: '#cd7c2e' }} />
+                  <p className="text-[9px] font-black text-white/60 truncate w-full text-center">
+                    {ranking[2].profiles?.username}
+                  </p>
+                  <p className="font-black text-xs mb-1" style={{ color: '#cd7c2e' }}>{ranking[2].puntos ?? 0}</p>
+                  <div className="w-full rounded-t-xl flex items-start justify-center pt-2"
+                    style={{
+                      height: '40px',
+                      background: 'linear-gradient(180deg, rgba(205,124,46,0.25), rgba(205,124,46,0.1))',
+                      border: '1px solid rgba(205,124,46,0.35)',
+                      boxShadow: '0 0 12px rgba(205,124,46,0.2)',
+                    }}>
+                    <span className="font-black text-xl" style={{ color: '#cd7c2e' }}>3</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stats post-partida */}
+          <div className="rounded-2xl p-3 flex-shrink-0"
+            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-2">Estadísticas Post-Partida</p>
+            <div className="flex flex-col gap-1.5">
+              {yo && (
+                <div className="flex items-center justify-between">
+                  <p className="text-white/40 text-[10px]">Tu posición</p>
+                  <p className="font-black text-xs" style={{ color: miPos <= 3 ? '#fbbf24' : '#00ffee' }}>
+                    {MEDAL[miPos - 1] ?? `#${miPos}`} · {yo.puntos ?? 0} pts
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <p className="text-white/40 text-[10px]">Temática</p>
+                <p className="font-black text-[10px]" style={{ color: '#00ffee' }}>{tematicas.join(', ')}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-white/40 text-[10px]">Modo</p>
+                <p className="font-black text-[10px]" style={{ color: '#ff00ff' }} >{sala.modo_juego}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-white/40 text-[10px]">Jugadores</p>
+                <p className="font-black text-[10px] text-white">{jugadores.length}</p>
               </div>
             </div>
-          )}
-
-          {/* ESTADÍSTICAS POST-PARTIDA */}
-          <div className="rounded-2xl p-4 flex-shrink-0"
-            style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/35 mb-3">Estadísticas Post-Partida</p>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-white/50 text-[10px] uppercase tracking-widest">Temática</p>
-                <p className="text-neonCyan font-black text-xs">{tematicas.join(', ')}</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-white/50 text-[10px] uppercase tracking-widest">Modo</p>
-                <p className="text-neonPink font-black text-xs capitalize">{sala.modo_juego}</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-white/50 text-[10px] uppercase tracking-widest">Jugadores</p>
-                <p className="text-white font-black text-xs">{jugadores.length}</p>
+            {/* Badges de temáticas */}
+            <div className="mt-3">
+              <p className="text-[9px] font-black uppercase tracking-[0.15em] text-white/25 mb-2">Total Playoff Badges</p>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { key: 'Rock',  icon: '🎸' },
+                  { key: 'Pop',   icon: '🎤' },
+                  { key: '80s',   icon: '🕹️' },
+                  { key: '90s',   icon: '📼' },
+                  { key: 'Metal', icon: '🤘' },
+                  { key: 'Blues', icon: '🎷' },
+                ].map(({ key, icon }) => (
+                  <div key={key}
+                    className="flex flex-col items-center gap-0.5"
+                    style={{ opacity: tematicas.includes(key) ? 1 : 0.25 }}>
+                    <span className="text-xl">{icon}</span>
+                    <span className="text-[8px] text-white/50 font-bold">{key}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* RIGHT: ranking */}
+        {/* RIGHT: ranking completo + finalizar */}
         <div className="flex-1 flex flex-col gap-2 min-w-0">
           <div className="rounded-2xl p-3 flex flex-col flex-1 overflow-hidden"
             style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -1213,7 +1325,7 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
                   className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border flex-shrink-0 ${j.user_id === user?.id ? 'border-neonCyan/30' : 'border-white/8'}`}
                   style={{ background: i === 0 ? 'rgba(251,191,36,0.12)' : i === 1 ? 'rgba(209,213,219,0.08)' : i === 2 ? 'rgba(205,124,46,0.08)' : 'rgba(255,255,255,0.04)' }}>
                   <span className="text-base flex-shrink-0 w-5 text-center">
-                    {MEDAL[i] ?? <span className="text-white/25 text-xs font-black">#{i + 1}</span>}
+                    {i < 3 ? MEDAL[i] : <span className="text-white/25 text-xs font-black">#{i + 1}</span>}
                   </span>
                   <img src={j.profiles?.avatar_url} className="w-8 h-8 rounded-full flex-shrink-0" />
                   <p className="font-black text-sm flex-1 truncate">{j.profiles?.username}</p>
