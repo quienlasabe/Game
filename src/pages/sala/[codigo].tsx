@@ -24,7 +24,10 @@ const PLAYER_COLORS = [
   { color: '#39ff14', glow: 'rgba(57,255,20,0.5)',  conic: 'conic-gradient(from 0deg, #39ff14, #88ff66, #39ff14)' },
   { color: '#ff8800', glow: 'rgba(255,136,0,0.5)',  conic: 'conic-gradient(from 0deg, #ff8800, #ffbb44, #ff8800)' },
 ];
-function playerColor(idx: number) { return PLAYER_COLORS[idx % PLAYER_COLORS.length]; }
+function playerColor(idx: number) {
+  const i = ((idx % PLAYER_COLORS.length) + PLAYER_COLORS.length) % PLAYER_COLORS.length;
+  return PLAYER_COLORS[i];
+}
 function NeonAvatar({ src, idx, size = 32, gold = false }: { src?: string; idx: number; size?: number; gold?: boolean }) {
   const pc = gold
     ? { conic: 'conic-gradient(from 0deg, #fbbf24, #fff8aa, #fbbf24)', glow: 'rgba(251,191,36,0.7)' }
