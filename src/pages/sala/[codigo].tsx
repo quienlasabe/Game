@@ -17,6 +17,29 @@ const FONDOS: Record<string, string> = {
   Blues: '/backgrounds/blues.jpg',
 };
 
+const PLAYER_COLORS = [
+  { color: '#ff00ff', glow: 'rgba(255,0,255,0.5)',  conic: 'conic-gradient(from 0deg, #ff00ff, #ff88ff, #ff00ff)' },
+  { color: '#00ffff', glow: 'rgba(0,255,255,0.5)',  conic: 'conic-gradient(from 0deg, #00ffff, #88ffff, #00ffff)' },
+  { color: '#f3ff00', glow: 'rgba(243,255,0,0.5)',  conic: 'conic-gradient(from 0deg, #f3ff00, #ffee88, #f3ff00)' },
+  { color: '#39ff14', glow: 'rgba(57,255,20,0.5)',  conic: 'conic-gradient(from 0deg, #39ff14, #88ff66, #39ff14)' },
+  { color: '#ff8800', glow: 'rgba(255,136,0,0.5)',  conic: 'conic-gradient(from 0deg, #ff8800, #ffbb44, #ff8800)' },
+];
+function playerColor(idx: number) { return PLAYER_COLORS[idx % PLAYER_COLORS.length]; }
+function NeonAvatar({ src, idx, size = 32, gold = false }: { src?: string; idx: number; size?: number; gold?: boolean }) {
+  const pc = gold
+    ? { conic: 'conic-gradient(from 0deg, #fbbf24, #fff8aa, #fbbf24)', glow: 'rgba(251,191,36,0.7)' }
+    : playerColor(idx);
+  return (
+    <div style={{ background: pc.conic, boxShadow: `0 0 ${gold ? 16 : 8}px ${pc.glow}`, padding: 2, borderRadius: '50%', display: 'inline-block', flexShrink: 0 }}>
+      {src ? (
+        <img src={src} style={{ width: size, height: size, borderRadius: '50%', display: 'block' }} />
+      ) : (
+        <div style={{ width: size, height: size, borderRadius: '50%', background: '#1a1a2e' }} />
+      )}
+    </div>
+  );
+}
+
 // ── Bocina (Web Audio) ──────────────────────────────────────────────────────
 function bocina() {
   try {
@@ -72,13 +95,7 @@ function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
-        {/* Logo */}
-        <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
-          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(1rem, 5vw, 1.3rem)', lineHeight: 1 }}>
-            ¿Quién la Sabe?
-          </span>
-        </div>
+        <span className="logo-neon" style={{ fontSize: 'clamp(1rem, 5vw, 1.2rem)' }}>¿Quién la Sabe?</span>
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className={labelCls}>Sala</p>
@@ -91,6 +108,9 @@ function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
         </div>
       </div>
 
+      {/* Cassette decorativo */}
+      <div className="relative z-10 text-center text-3xl flex-shrink-0 py-0.5" style={{ filter: 'drop-shadow(0 0 8px rgba(0,255,255,0.6))' }}>📼</div>
+
       {/* Body: dos columnas */}
       <div className="relative z-10 flex-1 flex gap-3 px-4 pb-4 overflow-hidden min-h-0">
 
@@ -100,9 +120,7 @@ function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
 
           {/* Host */}
           <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2">
-            {host?.profiles?.avatar_url && (
-              <img src={host.profiles.avatar_url} className="w-8 h-8 rounded-full border border-neonCyan/40" />
-            )}
+            <NeonAvatar src={host?.profiles?.avatar_url} idx={jugadores.findIndex((j: any) => j.user_id === sala.host_id)} size={32} />
             <div>
               <p className={labelCls}>Host</p>
               <p className="text-xs font-black">{host?.profiles?.username ?? 'Host'}</p>
@@ -201,11 +219,11 @@ function SalaEspera({ sala, jugadores, user, onEmpezar, onSalir }: any) {
                 </p>
               </div>
             )}
-            {jugadores.map((j: any) => (
+            {jugadores.map((j: any, jIdx: number) => (
               <div key={j.user_id}
                 className="flex items-center gap-2.5 bg-white/5 rounded-xl px-3 py-2.5 border border-white/8 flex-shrink-0">
                 <div className="relative flex-shrink-0">
-                  <img src={j.profiles?.avatar_url} className="w-9 h-9 rounded-full" />
+                  <NeonAvatar src={j.profiles?.avatar_url} idx={jIdx} size={36} />
                   {sala.host_id === j.user_id && (
                     <span className="absolute -top-1 -right-1 text-[9px] bg-neonCyan text-black rounded-full w-3.5 h-3.5 flex items-center justify-center font-black leading-none">H</span>
                   )}
@@ -373,12 +391,7 @@ function ModoJuntada({ sala, user }: any) {
 
       {/* Header */}
       <div className={`relative z-10 flex justify-between items-center px-4 pb-2 flex-shrink-0 ${!audioOK ? 'pt-12' : 'pt-4'}`}>
-        <div style={{ filter: 'drop-shadow(0 0 10px rgba(255,0,255,0.8))' }}>
-          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
-            ¿Quién la Sabe?
-          </span>
-        </div>
+        <span className="logo-neon" style={{ fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>¿Quién la Sabe?</span>
         <span className="text-yellow-400 text-[10px] font-black uppercase bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">
           🎉 Juntada
         </span>
@@ -553,7 +566,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
   const timerRespRef      = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Chat
-  const [mensajes,     setMensajes]     = useState<{ user: string; text: string; avatar?: string }[]>([]);
+  const [mensajes,     setMensajes]     = useState<{ user: string; text: string; avatar?: string; colorIdx?: number }[]>([]);
   const [mensajeInput, setMensajeInput] = useState('');
   const chatRef  = useRef<HTMLDivElement>(null);
   const canalRef = useRef<any>(null);
@@ -593,8 +606,9 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
     const t = mensajeInput.trim();
     if (!t || !canalRef.current) return;
     const p = jugadores.find((j: any) => j.user_id === user?.id);
+    const colorIdx = jugadores.findIndex((j: any) => j.user_id === user?.id);
     canalRef.current.send({ type: 'broadcast', event: 'msg',
-      payload: { user: p?.profiles?.username ?? 'Vos', text: t, avatar: p?.profiles?.avatar_url } });
+      payload: { user: p?.profiles?.username ?? 'Vos', text: t, avatar: p?.profiles?.avatar_url, colorIdx } });
     setMensajeInput('');
   };
 
@@ -794,13 +808,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
 
       {/* ── HEADER ── */}
       <div className={`relative z-10 flex justify-between items-center px-4 flex-shrink-0 ${!audioOK ? 'pt-11 pb-1' : 'pt-3 pb-1'}`}>
-        {/* Logo */}
-        <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
-          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(0.8rem, 3.5vw, 1rem)', lineHeight: 1 }}>
-            ¿Quién la Sabe?
-          </span>
-        </div>
+        <span className="logo-neon" style={{ fontSize: 'clamp(0.8rem, 3.5vw, 1rem)' }}>¿Quién la Sabe?</span>
         <div className="flex items-center gap-2">
           {modoEntrenamiento && (
             <span className="text-yellow-400 text-[8px] font-black uppercase bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">⚡ Entr.</span>
@@ -809,11 +817,46 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
         </div>
       </div>
 
-      {/* ── MAIN: LEFT + RIGHT ── */}
-      <div className="relative z-10 flex flex-1 gap-2.5 px-3 pb-2 overflow-hidden min-h-0">
+      {/* ── MAIN: SCORES + CENTER + RIGHT ── */}
+      <div className="relative z-10 flex flex-1 gap-0 px-2 pb-2 overflow-hidden min-h-0">
 
-        {/* ──────── LEFT ──────── */}
-        <div className="flex flex-col flex-1 gap-2 min-w-0 overflow-hidden">
+        {/* SCORES SIDEBAR */}
+        <div className="flex flex-col justify-center gap-2.5 px-1 flex-shrink-0" style={{ width: '50px' }}>
+          {jugadoresOrden.map((j: any) => {
+            const jIdx = jugadores.findIndex((x: any) => x.user_id === j.user_id);
+            const pc = playerColor(jIdx);
+            return (
+              <div key={j.user_id} className="flex flex-col items-center gap-0.5">
+                <NeonAvatar src={j.profiles?.avatar_url} idx={jIdx} size={22} />
+                <span style={{ fontWeight: 900, fontSize: '14px', lineHeight: 1, color: pc.color, textShadow: `0 0 6px ${pc.glow}` }}>
+                  {j.puntos ?? 0}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ──────── CENTER ──────── */}
+        <div className="flex flex-col flex-1 gap-2 min-w-0 overflow-hidden px-2">
+
+          {/* Top players */}
+          {fase === 'escuchando' && jugadoresOrden.length >= 2 && (
+            <div className="flex items-center justify-center gap-4 flex-shrink-0 pt-1">
+              {jugadoresOrden.slice(0, 2).map((j: any) => {
+                const jIdx = jugadores.findIndex((x: any) => x.user_id === j.user_id);
+                const isCurrent = j.user_id === user?.id;
+                const pc = playerColor(jIdx);
+                return (
+                  <div key={j.user_id} className="flex flex-col items-center gap-1">
+                    <NeonAvatar src={j.profiles?.avatar_url} idx={jIdx} size={isCurrent ? 46 : 36} />
+                    <p className="text-[9px] font-black" style={{ color: isCurrent ? pc.color : 'rgba(255,255,255,0.75)' }}>
+                      {j.profiles?.username}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* ▶ Display digital estilo LED */}
           <div className="rounded-2xl flex-shrink-0 overflow-hidden"
@@ -830,7 +873,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
                 )}
                 <div className="flex items-baseline gap-2">
                   <span style={{
-                    fontFamily: '"Courier New", "Lucida Console", monospace',
+                    fontFamily: '"Orbitron", monospace',
                     fontSize: 'clamp(2.8rem, 14vw, 4.8rem)',
                     fontWeight: 900,
                     color: '#39ff14',
@@ -841,7 +884,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
                     {String(timerCancion).padStart(2, '0')}
                   </span>
                   <span style={{
-                    fontFamily: '"Courier New", monospace',
+                    fontFamily: '"Orbitron", monospace',
                     fontWeight: 900,
                     fontSize: 'clamp(1rem, 5vw, 1.6rem)',
                     color: '#39ff14',
@@ -859,7 +902,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
                 <p className="text-white/40 text-[9px] uppercase tracking-[0.2em] mb-0.5">respondé!</p>
                 <div className="flex items-baseline gap-2">
                   <span style={{
-                    fontFamily: '"Courier New", "Lucida Console", monospace',
+                    fontFamily: '"Orbitron", monospace',
                     fontSize: 'clamp(2.8rem, 14vw, 4.8rem)',
                     fontWeight: 900,
                     color: timerRespuesta <= 5 ? '#ff4444' : '#ff00cc',
@@ -872,7 +915,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
                     {String(timerRespuesta).padStart(2, '0')}
                   </span>
                   <span style={{
-                    fontFamily: '"Courier New", monospace',
+                    fontFamily: '"Orbitron", monospace',
                     fontWeight: 900,
                     fontSize: 'clamp(1rem, 5vw, 1.6rem)',
                     color: timerRespuesta <= 5 ? '#ff4444' : '#ff00cc',
@@ -1064,7 +1107,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
                         ? '1px solid rgba(0,255,238,0.2)' : '1px solid transparent',
                     }}>
                     <div className="relative flex-shrink-0">
-                      <img src={j.profiles?.avatar_url} className="w-6 h-6 rounded-full" />
+                      <NeonAvatar src={j.profiles?.avatar_url} idx={jugadores.findIndex((x: any) => x.user_id === j.user_id)} size={20} />
                       {i === 0 && jugadoresOrden.length > 1 && (
                         <span className="absolute -top-1.5 -right-1 text-[9px]">👑</span>
                       )}
@@ -1109,7 +1152,7 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
               )}
               {mensajes.map((m, i) => (
                 <div key={i} className="flex items-start gap-1 flex-shrink-0">
-                  {m.avatar && <img src={m.avatar} className="w-4 h-4 rounded-full mt-0.5 flex-shrink-0" />}
+                  {m.avatar && <NeonAvatar src={m.avatar} idx={m.colorIdx ?? 0} size={14} />}
                   <p className="text-[9px] leading-snug break-all">
                     <span className="font-black" style={{ color: '#00ffee' }}>{m.user}: </span>
                     <span className="text-white/75">{m.text}</span>
@@ -1133,25 +1176,6 @@ function PantallaJuego({ sala, jugadores, user, codigo }: any) {
         </div>
       </div>
 
-      {/* ── FOOTER: avatares ── */}
-      <div className="relative z-10 flex gap-1.5 justify-center flex-wrap px-3 pb-3 flex-shrink-0">
-        {jugadoresOrden.map((j: any, i: number) => (
-          <div key={j.user_id}
-            className="flex flex-col items-center px-2 py-1 rounded-xl transition-all"
-            style={{
-              background: j.respuesta_ronda && fase === 'respondiendo'
-                ? 'rgba(0,255,238,0.15)' : 'rgba(255,255,255,0.04)',
-              border: j.respuesta_ronda && fase === 'respondiendo'
-                ? '1px solid rgba(0,255,238,0.3)' : '1px solid transparent',
-            }}>
-            {i === 0 && jugadoresOrden.length > 1 && (
-              <span className="text-yellow-400 text-[7px] leading-none mb-0.5">👑</span>
-            )}
-            <img src={j.profiles?.avatar_url} className="w-8 h-8 rounded-full" />
-            <p className="font-black text-[10px] mt-0.5" style={{ color: '#00ffee' }}>{j.puntos ?? 0}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -1173,12 +1197,7 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
-        <div style={{ filter: 'drop-shadow(0 0 12px rgba(255,0,200,0.9))' }}>
-          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(0.9rem, 4vw, 1.1rem)', lineHeight: 1 }}>
-            ¿Quién la Sabe?
-          </span>
-        </div>
+        <span className="logo-neon" style={{ fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>¿Quién la Sabe?</span>
         <span className="text-yellow-400 text-[10px] font-black bg-yellow-400/10 px-2 py-0.5 rounded-full border border-yellow-400/30">
           FIN
         </span>
@@ -1198,9 +1217,7 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
               {/* 2do */}
               {ranking[1] && (
                 <div className="flex flex-col items-center" style={{ flex: 1 }}>
-                  <img src={ranking[1].profiles?.avatar_url}
-                    className="w-9 h-9 rounded-full border-2 mb-1"
-                    style={{ borderColor: '#d1d5db' }} />
+                  <NeonAvatar src={ranking[1].profiles?.avatar_url} idx={jugadores.findIndex((x: any) => x.user_id === ranking[1].user_id)} size={36} />
                   <p className="text-[9px] font-black text-white/70 truncate w-full text-center">
                     {ranking[1].profiles?.username}
                   </p>
@@ -1220,9 +1237,7 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
               {ranking[0] && (
                 <div className="flex flex-col items-center" style={{ flex: 1 }}>
                   <span className="text-base mb-0.5">👑</span>
-                  <img src={ranking[0].profiles?.avatar_url}
-                    className="w-12 h-12 rounded-full border-2 mb-1"
-                    style={{ borderColor: '#fbbf24' }} />
+                  <NeonAvatar src={ranking[0].profiles?.avatar_url} idx={jugadores.findIndex((x: any) => x.user_id === ranking[0].user_id)} size={44} gold />
                   <p className="text-[9px] font-black text-white/80 truncate w-full text-center">
                     {ranking[0].profiles?.username}
                   </p>
@@ -1243,9 +1258,7 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
               {/* 3ro */}
               {ranking[2] && (
                 <div className="flex flex-col items-center" style={{ flex: 1 }}>
-                  <img src={ranking[2].profiles?.avatar_url}
-                    className="w-9 h-9 rounded-full border-2 mb-1"
-                    style={{ borderColor: '#cd7c2e' }} />
+                  <NeonAvatar src={ranking[2].profiles?.avatar_url} idx={jugadores.findIndex((x: any) => x.user_id === ranking[2].user_id)} size={36} />
                   <p className="text-[9px] font-black text-white/60 truncate w-full text-center">
                     {ranking[2].profiles?.username}
                   </p>
@@ -1327,7 +1340,7 @@ function PantallaFinal({ sala, jugadores, user, onFinalizar }: any) {
                   <span className="text-base flex-shrink-0 w-5 text-center">
                     {i < 3 ? MEDAL[i] : <span className="text-white/25 text-xs font-black">#{i + 1}</span>}
                   </span>
-                  <img src={j.profiles?.avatar_url} className="w-8 h-8 rounded-full flex-shrink-0" />
+                  <NeonAvatar src={j.profiles?.avatar_url} idx={jugadores.findIndex((x: any) => x.user_id === j.user_id)} size={30} gold={i === 0} />
                   <p className="font-black text-sm flex-1 truncate">{j.profiles?.username}</p>
                   <p className="font-black text-sm flex-shrink-0" style={{ color: '#00ffee' }}>{j.puntos ?? 0}</p>
                 </div>

@@ -40,20 +40,10 @@ export default function Portada({ session }: { session: any }) {
 
       <div className="relative z-10 flex flex-col items-center text-center px-6 animate-fadeIn gap-6">
 
-        {/* Título Pacifico */}
-        <div style={{ filter: 'drop-shadow(0 0 30px rgba(255,0,255,0.9)) drop-shadow(0 0 60px rgba(0,255,255,0.4))' }}>
-          <h1
-            className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(3.5rem, 18vw, 8rem)', lineHeight: 1.05 }}
-          >
-            ¿Quién
-          </h1>
-          <h1
-            className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(3.5rem, 18vw, 8rem)', lineHeight: 1.05 }}
-          >
-            la Sabe?
-          </h1>
+        {/* Título neon sign */}
+        <div>
+          <div className="neon-title" style={{ fontSize: 'clamp(3.5rem, 18vw, 8rem)' }}>¿Quién</div>
+          <div className="neon-title" style={{ fontSize: 'clamp(3.5rem, 18vw, 8rem)' }}>la Sabe?</div>
         </div>
 
         {/* Card de perfil si ya está logueado */}
@@ -62,7 +52,9 @@ export default function Portada({ session }: { session: any }) {
             <div className="flex items-center gap-3 px-5 py-3 rounded-2xl border border-white/15"
               style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)' }}>
               <div className="relative">
-                <img src={perfil.avatar_url} className="w-14 h-14 rounded-full border-2 border-neonCyan/60" />
+                <div style={{ background: 'conic-gradient(from 0deg, #ff00ff, #ff88ff, #ff00ff)', padding: 3, borderRadius: '50%', boxShadow: '0 0 12px rgba(255,0,255,0.6)', display: 'inline-block' }}>
+                  <img src={perfil.avatar_url} style={{ width: 52, height: 52, borderRadius: '50%', display: 'block' }} />
+                </div>
                 <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full w-4 h-4 border-2 border-black" />
               </div>
               <div className="text-left">
@@ -91,7 +83,8 @@ export default function Portada({ session }: { session: any }) {
             {/* Botón unirse */}
             <button
               onClick={() => router.push('/lobby')}
-              className="flex items-center justify-center gap-3 px-8 py-4 bg-transparent text-white font-black text-base rounded-2xl border-2 border-white/25 hover:border-white/60 hover:scale-105 active:scale-95 transition-all w-72"
+              className="flex items-center justify-center gap-3 px-8 py-4 font-black text-base rounded-2xl hover:scale-105 active:scale-95 transition-all w-72"
+              style={{ background: 'transparent', border: '2px solid rgba(0,255,255,0.45)', color: '#00ffff', textShadow: '0 0 8px rgba(0,255,255,0.5)', boxShadow: '0 0 12px rgba(0,255,255,0.15)' }}
             >
               UNIRSE A PARTIDA
             </button>

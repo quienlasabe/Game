@@ -92,13 +92,7 @@ export default function Lobby({ session, user }: { session: any; user: any }) {
 
       {/* ── HEADER ── */}
       <header className="w-full max-w-2xl flex items-center justify-between px-5 pt-6 pb-2">
-        {/* Logo */}
-        <div style={{ filter: 'drop-shadow(0 0 16px rgba(255,0,255,0.8)) drop-shadow(0 0 32px rgba(0,255,255,0.4))' }}>
-          <span className="title-qls text-transparent bg-clip-text bg-gradient-to-r from-neonPink via-white to-neonCyan"
-            style={{ fontSize: 'clamp(1.2rem, 5vw, 1.6rem)', lineHeight: 1 }}>
-            ¿Quién la Sabe?
-          </span>
-        </div>
+        <span className="logo-neon" style={{ fontSize: 'clamp(1.2rem, 5vw, 1.6rem)' }}>¿Quién la Sabe?</span>
         {/* Perfil chip */}
         <button onClick={cerrarSesion}
           className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full pl-1 pr-3 py-1 hover:bg-white/10 transition-all">

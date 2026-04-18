@@ -29,3 +29,41 @@ body {
   font-family: 'Pacifico', cursive;
   line-height: 1;
 }
+
+/* Neon sign title — portada */
+.neon-title {
+  font-family: 'Pacifico', cursive;
+  color: #ff00dd;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 10px #fff,
+    0 0 20px #ff00dd,
+    0 0 40px #ff00dd,
+    0 0 80px #ff00dd,
+    0 0 120px #ff00dd;
+  animation: neonFlicker 5s infinite;
+  line-height: 1.1;
+  text-align: center;
+}
+
+@keyframes neonFlicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    text-shadow:
+      0 0 4px #fff,
+      0 0 10px #fff,
+      0 0 20px #ff00dd,
+      0 0 40px #ff00dd,
+      0 0 80px #ff00dd,
+      0 0 120px #ff00dd;
+  }
+  20%, 24%, 55% {
+    text-shadow: none;
+  }
+}
+
+/* Small neon logo for headers */
+.logo-neon {
+  font-family: 'Pacifico', cursive;
+  color: #ff00dd;
+  text-shadow: 0 0 6px #ff00dd, 0 0 14px #ff00dd;
+}
